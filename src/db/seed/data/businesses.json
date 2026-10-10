@@ -1,0 +1,1706 @@
+[
+  {
+    "id": "virunga-hillside-ecolodge",
+    "name": "Virunga Hillside Eco-Lodge",
+    "propertyType": "Lodge",
+    "ownerName": "Claudine Uwase",
+    "ownerId": "user-business-1",
+    "locationId": "musanze",
+    "district": "Musanze",
+    "description": "Eight stone cottages facing the volcanoes, built by local masons, run on solar power and serving vegetables from the lodge garden.",
+    "image": "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.8,
+    "reviewCount": 156,
+    "badges": [
+      "Eco-certified",
+      "Solar-powered",
+      "Women-led"
+    ],
+    "phone": "+250 788 123 401",
+    "email": "stay@virungahillside.rw",
+    "coordinates": {
+      "lat": -1.46,
+      "lng": 29.6
+    },
+    "services": [
+      {
+        "id": "svc-1",
+        "name": "Volcano-view cottage",
+        "description": "Stone cottage with fireplace and private terrace. Breakfast included.",
+        "priceRwf": 180000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 6,
+        "bedType": "1 king bed",
+        "amenities": [
+          "Fireplace",
+          "Breakfast",
+          "Hot shower",
+          "Wi-Fi"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "svc-1b",
+        "name": "Family cottage",
+        "description": "Two bedrooms sharing a lounge with a fireplace. Breakfast included.",
+        "priceRwf": 290000,
+        "unit": "per night",
+        "capacity": 4,
+        "available": 2,
+        "bedType": "1 king + 2 single beds",
+        "amenities": [
+          "Fireplace",
+          "Breakfast",
+          "Lounge",
+          "Wi-Fi"
+        ],
+        "group": "room",
+        "category": "VIP"
+      },
+      {
+        "id": "svc-2",
+        "name": "Trek-day packed lunch",
+        "description": "Garden-grown lunch for your gorilla trek",
+        "priceRwf": 12000,
+        "unit": "per person",
+        "group": "activity",
+        "category": "Trek-day packed lunch"
+      },
+      {
+        "id": "virunga-hillside-ecolodge-massage",
+        "name": "Massage",
+        "category": "Massage",
+        "group": "wellness",
+        "description": "A 60-minute massage.",
+        "priceRwf": 36000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "virunga-hillside-ecolodge-gym",
+        "name": "Gym",
+        "category": "Gym",
+        "group": "wellness",
+        "description": "A session in the gym.",
+        "priceRwf": 9000,
+        "unit": "per person",
+        "available": 20
+      },
+      {
+        "id": "virunga-hillside-ecolodge-sauna",
+        "name": "Sauna",
+        "category": "Sauna",
+        "group": "wellness",
+        "description": "A private sauna session.",
+        "priceRwf": 21500,
+        "unit": "per person",
+        "available": 4
+      },
+      {
+        "id": "virunga-hillside-ecolodge-spa",
+        "name": "Spa",
+        "category": "Spa",
+        "group": "wellness",
+        "description": "A spa treatment.",
+        "priceRwf": 63000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "virunga-hillside-ecolodge-yoga",
+        "name": "Yoga",
+        "category": "Yoga",
+        "group": "wellness",
+        "description": "A yoga session.",
+        "priceRwf": 14500,
+        "unit": "per person",
+        "available": 10
+      },
+      {
+        "id": "virunga-hillside-ecolodge-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 32500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "virunga-hillside-ecolodge-bar",
+        "name": "Bar",
+        "category": "Bar",
+        "group": "food",
+        "description": "Starting price per drink. The bill depends on what is ordered.",
+        "priceRwf": 14500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "virunga-hillside-ecolodge-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 7000,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 3,
+    "createdAt": "2025-02-01",
+    "ecoFeatures": [
+      "Solar hot water",
+      "Rainwater harvesting",
+      "Organic garden"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Volcano-view cottage",
+      "Family cottage"
+    ],
+    "listingKind": "Lodge"
+  },
+  {
+    "id": "gorilla-gate-hotel",
+    "name": "Gorilla Gate Hotel",
+    "propertyType": "Hotel",
+    "ownerName": "Claudine Uwase",
+    "ownerId": "user-business-1",
+    "locationId": "musanze",
+    "district": "Musanze",
+    "description": "A 29-room town hotel ten minutes from the park headquarters, with an early breakfast for trekkers and a rooftop view of all five volcanoes.",
+    "image": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.5,
+    "reviewCount": 88,
+    "badges": [
+      "Plastic-free"
+    ],
+    "phone": "+250 788 123 402",
+    "email": "rooms@gorillagate.rw",
+    "coordinates": {
+      "lat": -1.499,
+      "lng": 29.634
+    },
+    "services": [
+      {
+        "id": "svc-gg-1",
+        "name": "Standard double",
+        "description": "Garden-facing room with en-suite shower.",
+        "priceRwf": 95000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 14,
+        "bedType": "1 double bed",
+        "amenities": [
+          "Breakfast",
+          "Wi-Fi",
+          "Desk"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "svc-gg-2",
+        "name": "Deluxe king",
+        "description": "Larger room with a volcano view and a bathtub.",
+        "priceRwf": 140000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 8,
+        "bedType": "1 king bed",
+        "amenities": [
+          "Breakfast",
+          "Wi-Fi",
+          "Bathtub",
+          "Volcano view"
+        ],
+        "group": "room",
+        "category": "VIP"
+      },
+      {
+        "id": "svc-gg-3",
+        "name": "Family room",
+        "description": "Two connecting rooms for parents and children.",
+        "priceRwf": 175000,
+        "unit": "per night",
+        "capacity": 4,
+        "available": 4,
+        "bedType": "1 queen + 2 single beds",
+        "amenities": [
+          "Breakfast",
+          "Wi-Fi",
+          "Connecting rooms"
+        ],
+        "group": "room",
+        "category": "VVIP"
+      },
+      {
+        "id": "svc-gg-4",
+        "name": "Executive suite",
+        "description": "Separate lounge, rooftop access and airport transfer.",
+        "priceRwf": 230000,
+        "unit": "per night",
+        "capacity": 3,
+        "available": 3,
+        "bedType": "1 king bed + sofa bed",
+        "amenities": [
+          "Breakfast",
+          "Wi-Fi",
+          "Lounge",
+          "Airport transfer"
+        ],
+        "group": "room",
+        "category": "Premium"
+      },
+      {
+        "id": "gorilla-gate-hotel-massage",
+        "name": "Massage",
+        "category": "Massage",
+        "group": "wellness",
+        "description": "A 60-minute massage.",
+        "priceRwf": 27000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "gorilla-gate-hotel-gym",
+        "name": "Gym",
+        "category": "Gym",
+        "group": "wellness",
+        "description": "A session in the gym.",
+        "priceRwf": 7000,
+        "unit": "per person",
+        "available": 20
+      },
+      {
+        "id": "gorilla-gate-hotel-sauna",
+        "name": "Sauna",
+        "category": "Sauna",
+        "group": "wellness",
+        "description": "A private sauna session.",
+        "priceRwf": 16000,
+        "unit": "per person",
+        "available": 4
+      },
+      {
+        "id": "gorilla-gate-hotel-spa",
+        "name": "Spa",
+        "category": "Spa",
+        "group": "wellness",
+        "description": "A spa treatment.",
+        "priceRwf": 47500,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "gorilla-gate-hotel-yoga",
+        "name": "Yoga",
+        "category": "Yoga",
+        "group": "wellness",
+        "description": "A yoga session.",
+        "priceRwf": 11000,
+        "unit": "per person",
+        "available": 10
+      },
+      {
+        "id": "gorilla-gate-hotel-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 24500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "gorilla-gate-hotel-bar",
+        "name": "Bar",
+        "category": "Bar",
+        "group": "food",
+        "description": "Starting price per drink. The bill depends on what is ordered.",
+        "priceRwf": 11000,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "gorilla-gate-hotel-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 5500,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 2,
+    "createdAt": "2025-03-12",
+    "ecoFeatures": [
+      "Refill water stations",
+      "LED lighting"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Standard double",
+      "Deluxe king",
+      "Family room",
+      "Executive suite"
+    ],
+    "listingKind": "Hotel"
+  },
+  {
+    "id": "kinigi-family-house",
+    "name": "Kinigi Family House",
+    "propertyType": "House",
+    "ownerName": "Claudine Uwase",
+    "ownerId": "user-business-1",
+    "locationId": "volcanoes-national-park",
+    "district": "Musanze",
+    "description": "A whole three-bedroom house with a garden and a cook on request, five minutes from the Kinigi park gate. Ideal for families and small groups.",
+    "image": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.9,
+    "reviewCount": 23,
+    "badges": [
+      "Women-led"
+    ],
+    "phone": "+250 788 123 403",
+    "email": "house@kinigifamily.rw",
+    "coordinates": {
+      "lat": -1.428,
+      "lng": 29.588
+    },
+    "services": [
+      {
+        "id": "svc-kf-1",
+        "name": "Entire house (3 bedrooms)",
+        "description": "Three bedrooms, two bathrooms, kitchen, garden and parking.",
+        "priceRwf": 250000,
+        "unit": "per night",
+        "capacity": 6,
+        "available": 1,
+        "bedType": "1 king, 1 queen, 2 single beds",
+        "amenities": [
+          "Kitchen",
+          "Garden",
+          "Parking",
+          "Wi-Fi",
+          "Cook on request"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "svc-kf-2",
+        "name": "Home-cooked dinner",
+        "description": "Rwandan dinner cooked in the house",
+        "priceRwf": 15000,
+        "unit": "per person",
+        "group": "activity",
+        "category": "Home-cooked dinner"
+      },
+      {
+        "id": "kinigi-family-house-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 32500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "kinigi-family-house-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 7000,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 3,
+    "createdAt": "2025-06-20",
+    "ecoFeatures": [
+      "Solar water heater"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Entire house (3 bedrooms)"
+    ],
+    "listingKind": "House"
+  },
+  {
+    "id": "kigali-heights-hotel",
+    "name": "Kigali Heights Hotel",
+    "propertyType": "Hotel",
+    "ownerName": "Alice Uwimana",
+    "ownerId": "u-alice",
+    "locationId": "kigali",
+    "district": "Gasabo",
+    "description": "A business hotel in Kimihurura with a pool, a 24-hour front desk and shuttle access to the Convention Centre.",
+    "image": "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.4,
+    "reviewCount": 312,
+    "badges": [
+      "Plastic-free"
+    ],
+    "phone": "+250 788 300 100",
+    "email": "reservations@kigaliheights.rw",
+    "coordinates": {
+      "lat": -1.953,
+      "lng": 30.093
+    },
+    "services": [
+      {
+        "id": "svc-kh-std",
+        "name": "Standard room",
+        "description": "City-view room with work desk.",
+        "priceRwf": 110000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 40,
+        "bedType": "1 queen bed",
+        "amenities": [
+          "Breakfast",
+          "Wi-Fi",
+          "Pool",
+          "Gym"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "svc-kh-biz",
+        "name": "Business king",
+        "description": "Quiet upper-floor room with lounge access.",
+        "priceRwf": 150000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 20,
+        "bedType": "1 king bed",
+        "amenities": [
+          "Breakfast",
+          "Wi-Fi",
+          "Lounge access",
+          "Pool"
+        ],
+        "group": "room",
+        "category": "VIP"
+      },
+      {
+        "id": "svc-kh-ste",
+        "name": "Junior suite",
+        "description": "Separate sitting area and skyline view.",
+        "priceRwf": 260000,
+        "unit": "per night",
+        "capacity": 3,
+        "available": 6,
+        "bedType": "1 king bed + sofa bed",
+        "amenities": [
+          "Breakfast",
+          "Wi-Fi",
+          "Lounge access",
+          "Bathtub"
+        ],
+        "group": "room",
+        "category": "VVIP"
+      },
+      {
+        "id": "kigali-heights-hotel-massage",
+        "name": "Massage",
+        "category": "Massage",
+        "group": "wellness",
+        "description": "A 60-minute massage.",
+        "priceRwf": 36000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "kigali-heights-hotel-gym",
+        "name": "Gym",
+        "category": "Gym",
+        "group": "wellness",
+        "description": "A session in the gym.",
+        "priceRwf": 9000,
+        "unit": "per person",
+        "available": 20
+      },
+      {
+        "id": "kigali-heights-hotel-sauna",
+        "name": "Sauna",
+        "category": "Sauna",
+        "group": "wellness",
+        "description": "A private sauna session.",
+        "priceRwf": 21500,
+        "unit": "per person",
+        "available": 4
+      },
+      {
+        "id": "kigali-heights-hotel-spa",
+        "name": "Spa",
+        "category": "Spa",
+        "group": "wellness",
+        "description": "A spa treatment.",
+        "priceRwf": 63000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "kigali-heights-hotel-yoga",
+        "name": "Yoga",
+        "category": "Yoga",
+        "group": "wellness",
+        "description": "A yoga session.",
+        "priceRwf": 14500,
+        "unit": "per person",
+        "available": 10
+      },
+      {
+        "id": "kigali-heights-hotel-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 32500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "kigali-heights-hotel-bar",
+        "name": "Bar",
+        "category": "Bar",
+        "group": "food",
+        "description": "Starting price per drink. The bill depends on what is ordered.",
+        "priceRwf": 14500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "kigali-heights-hotel-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 7000,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 3,
+    "createdAt": "2025-01-15",
+    "ecoFeatures": [
+      "Water-saving fixtures"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Standard room",
+      "Business king",
+      "Junior suite"
+    ],
+    "listingKind": "Hotel"
+  },
+  {
+    "id": "kiyovu-garden-apartments",
+    "name": "Kiyovu Garden Apartments",
+    "propertyType": "Apartment",
+    "ownerName": "Jean-Paul Mugisha",
+    "ownerId": "u-jean",
+    "locationId": "kigali",
+    "district": "Nyarugenge",
+    "description": "Serviced studios and two-bedroom apartments with full kitchens, walking distance from downtown Kigali.",
+    "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.6,
+    "reviewCount": 64,
+    "badges": [
+      "Community-owned"
+    ],
+    "phone": "+250 788 300 220",
+    "email": "stay@kiyovugarden.rw",
+    "coordinates": {
+      "lat": -1.948,
+      "lng": 30.061
+    },
+    "services": [
+      {
+        "id": "svc-ka-1",
+        "name": "Studio apartment",
+        "description": "Open-plan studio with kitchenette.",
+        "priceRwf": 60000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 6,
+        "bedType": "1 double bed",
+        "amenities": [
+          "Kitchenette",
+          "Wi-Fi",
+          "Weekly cleaning"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "svc-ka-2",
+        "name": "Two-bedroom apartment",
+        "description": "Two bedrooms, full kitchen and balcony.",
+        "priceRwf": 120000,
+        "unit": "per night",
+        "capacity": 4,
+        "available": 4,
+        "bedType": "1 queen + 2 single beds",
+        "amenities": [
+          "Kitchen",
+          "Wi-Fi",
+          "Balcony",
+          "Washing machine"
+        ],
+        "group": "room",
+        "category": "VIP"
+      },
+      {
+        "id": "kiyovu-garden-apartments-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 24500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "kiyovu-garden-apartments-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 5500,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 2,
+    "createdAt": "2025-04-02",
+    "ecoFeatures": [
+      "Solar water heater"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Studio apartment",
+      "Two-bedroom apartment"
+    ],
+    "listingKind": "Apartment"
+  },
+  {
+    "id": "kivu-shores-guesthouse",
+    "name": "Kivu Shores Guesthouse",
+    "propertyType": "Guesthouse",
+    "ownerName": "Jean-Paul Habimana",
+    "locationId": "lake-kivu",
+    "district": "Karongi",
+    "description": "A family-run guesthouse with lake-facing rooms, kayaks to borrow and fresh isambaza fish on the menu every evening.",
+    "image": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.5,
+    "reviewCount": 94,
+    "badges": [
+      "Community-owned",
+      "Plastic-free"
+    ],
+    "phone": "+250 788 220 315",
+    "email": "hello@kivushores.rw",
+    "coordinates": {
+      "lat": -2.07,
+      "lng": 29.36
+    },
+    "services": [
+      {
+        "id": "svc-3c",
+        "name": "Dormitory bed",
+        "description": "Bed in a shared six-bed room.",
+        "priceRwf": 18000,
+        "unit": "per night",
+        "capacity": 1,
+        "available": 12,
+        "bedType": "1 bunk bed",
+        "amenities": [
+          "Locker",
+          "Shared bathroom"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "svc-3b",
+        "name": "Twin room",
+        "description": "Two single beds, garden side.",
+        "priceRwf": 55000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 4,
+        "bedType": "2 single beds",
+        "amenities": [
+          "Breakfast",
+          "Kayaks"
+        ],
+        "group": "room",
+        "category": "VIP"
+      },
+      {
+        "id": "svc-3",
+        "name": "Lake-view room",
+        "description": "Double room with breakfast.",
+        "priceRwf": 65000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 6,
+        "bedType": "1 double bed",
+        "amenities": [
+          "Breakfast",
+          "Lake view",
+          "Kayaks"
+        ],
+        "group": "room",
+        "category": "VVIP"
+      },
+      {
+        "id": "kivu-shores-guesthouse-massage",
+        "name": "Massage",
+        "category": "Massage",
+        "group": "wellness",
+        "description": "A 60-minute massage.",
+        "priceRwf": 27000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "kivu-shores-guesthouse-sauna",
+        "name": "Sauna",
+        "category": "Sauna",
+        "group": "wellness",
+        "description": "A private sauna session.",
+        "priceRwf": 16000,
+        "unit": "per person",
+        "available": 4
+      },
+      {
+        "id": "kivu-shores-guesthouse-spa",
+        "name": "Spa",
+        "category": "Spa",
+        "group": "wellness",
+        "description": "A spa treatment.",
+        "priceRwf": 47500,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "kivu-shores-guesthouse-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 24500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "kivu-shores-guesthouse-bar",
+        "name": "Bar",
+        "category": "Bar",
+        "group": "food",
+        "description": "Starting price per drink. The bill depends on what is ordered.",
+        "priceRwf": 11000,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "kivu-shores-guesthouse-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 5500,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 2,
+    "createdAt": "2025-02-05",
+    "ecoFeatures": [
+      "Refill water station",
+      "Local staff only"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Lake-view room",
+      "Twin room",
+      "Dormitory bed"
+    ],
+    "listingKind": "Guesthouse"
+  },
+  {
+    "id": "rubavu-lakeside-villa",
+    "name": "Rubavu Lakeside Villa",
+    "propertyType": "House",
+    "ownerName": "Eric Ndayisaba",
+    "ownerId": "u-eric",
+    "locationId": "rubavu",
+    "district": "Rubavu",
+    "description": "A four-bedroom villa with its own beach on Lake Kivu, a boat jetty and a garden made for sunsets.",
+    "image": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.7,
+    "reviewCount": 31,
+    "badges": [
+      "Solar-powered"
+    ],
+    "phone": "+250 788 410 550",
+    "email": "villa@rubavulakeside.rw",
+    "coordinates": {
+      "lat": -1.69,
+      "lng": 29.26
+    },
+    "services": [
+      {
+        "id": "svc-rv-1",
+        "name": "Entire villa (4 bedrooms)",
+        "description": "Four en-suite bedrooms, kitchen, private beach and jetty.",
+        "priceRwf": 420000,
+        "unit": "per night",
+        "capacity": 8,
+        "available": 1,
+        "bedType": "2 king, 2 queen beds",
+        "amenities": [
+          "Private beach",
+          "Kitchen",
+          "Parking",
+          "Wi-Fi",
+          "Housekeeping"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "rubavu-lakeside-villa-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 32500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "rubavu-lakeside-villa-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 7000,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 3,
+    "createdAt": "2025-05-11",
+    "ecoFeatures": [
+      "Solar power",
+      "Rainwater harvesting"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Entire villa (4 bedrooms)"
+    ],
+    "listingKind": "House"
+  },
+  {
+    "id": "akagera-savannah-lodge",
+    "name": "Akagera Savannah Lodge",
+    "propertyType": "Lodge",
+    "ownerName": "Eric Niyonsenga",
+    "locationId": "akagera-national-park",
+    "district": "Kayonza",
+    "description": "Chalets on a ridge above Lake Ihema, with game drives leaving from the door at sunrise.",
+    "image": "https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.7,
+    "reviewCount": 142,
+    "badges": [
+      "Eco-certified"
+    ],
+    "phone": "+250 788 410 777",
+    "email": "chalets@akagerasavannah.rw",
+    "coordinates": {
+      "lat": -1.87,
+      "lng": 30.71
+    },
+    "services": [
+      {
+        "id": "svc-as-1",
+        "name": "Savannah chalet",
+        "description": "Chalet with a deck over the lake. Full board.",
+        "priceRwf": 210000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 10,
+        "bedType": "1 king bed",
+        "amenities": [
+          "Full board",
+          "Lake view",
+          "Deck"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "svc-as-2",
+        "name": "Family chalet",
+        "description": "Two bedrooms with a shared deck. Full board.",
+        "priceRwf": 330000,
+        "unit": "per night",
+        "capacity": 4,
+        "available": 4,
+        "bedType": "1 king + 2 single beds",
+        "amenities": [
+          "Full board",
+          "Lake view",
+          "Deck"
+        ],
+        "group": "room",
+        "category": "VIP"
+      },
+      {
+        "id": "akagera-savannah-lodge-massage",
+        "name": "Massage",
+        "category": "Massage",
+        "group": "wellness",
+        "description": "A 60-minute massage.",
+        "priceRwf": 36000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "akagera-savannah-lodge-gym",
+        "name": "Gym",
+        "category": "Gym",
+        "group": "wellness",
+        "description": "A session in the gym.",
+        "priceRwf": 9000,
+        "unit": "per person",
+        "available": 20
+      },
+      {
+        "id": "akagera-savannah-lodge-sauna",
+        "name": "Sauna",
+        "category": "Sauna",
+        "group": "wellness",
+        "description": "A private sauna session.",
+        "priceRwf": 21500,
+        "unit": "per person",
+        "available": 4
+      },
+      {
+        "id": "akagera-savannah-lodge-spa",
+        "name": "Spa",
+        "category": "Spa",
+        "group": "wellness",
+        "description": "A spa treatment.",
+        "priceRwf": 63000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "akagera-savannah-lodge-yoga",
+        "name": "Yoga",
+        "category": "Yoga",
+        "group": "wellness",
+        "description": "A yoga session.",
+        "priceRwf": 14500,
+        "unit": "per person",
+        "available": 10
+      },
+      {
+        "id": "akagera-savannah-lodge-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 32500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "akagera-savannah-lodge-bar",
+        "name": "Bar",
+        "category": "Bar",
+        "group": "food",
+        "description": "Starting price per drink. The bill depends on what is ordered.",
+        "priceRwf": 14500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "akagera-savannah-lodge-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 7000,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 3,
+    "createdAt": "2025-03-01",
+    "ecoFeatures": [
+      "Solar power",
+      "Plastic-free kitchen"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Savannah chalet",
+      "Family chalet"
+    ],
+    "listingKind": "Lodge"
+  },
+  {
+    "id": "nyungwe-forest-camp",
+    "name": "Nyungwe Forest Camp",
+    "propertyType": "Lodge",
+    "ownerName": "Eric Niyonsenga",
+    "locationId": "nyungwe-national-park",
+    "district": "Nyamasheke",
+    "description": "Raised safari tents on the edge of the tea fields, a short walk from the Gisakura trailheads.",
+    "image": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.6,
+    "reviewCount": 71,
+    "badges": [
+      "Eco-certified",
+      "Solar-powered"
+    ],
+    "phone": "+250 788 410 902",
+    "email": "camp@nyungweforest.rw",
+    "coordinates": {
+      "lat": -2.45,
+      "lng": 29.1
+    },
+    "services": [
+      {
+        "id": "svc-4",
+        "name": "Forest tent",
+        "description": "Full board, guided night walk included.",
+        "priceRwf": 140000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 6,
+        "bedType": "1 double bed",
+        "amenities": [
+          "Full board",
+          "Night walk",
+          "Solar lighting"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "nyungwe-forest-camp-massage",
+        "name": "Massage",
+        "category": "Massage",
+        "group": "wellness",
+        "description": "A 60-minute massage.",
+        "priceRwf": 36000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "nyungwe-forest-camp-gym",
+        "name": "Gym",
+        "category": "Gym",
+        "group": "wellness",
+        "description": "A session in the gym.",
+        "priceRwf": 9000,
+        "unit": "per person",
+        "available": 20
+      },
+      {
+        "id": "nyungwe-forest-camp-sauna",
+        "name": "Sauna",
+        "category": "Sauna",
+        "group": "wellness",
+        "description": "A private sauna session.",
+        "priceRwf": 21500,
+        "unit": "per person",
+        "available": 4
+      },
+      {
+        "id": "nyungwe-forest-camp-spa",
+        "name": "Spa",
+        "category": "Spa",
+        "group": "wellness",
+        "description": "A spa treatment.",
+        "priceRwf": 63000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "nyungwe-forest-camp-yoga",
+        "name": "Yoga",
+        "category": "Yoga",
+        "group": "wellness",
+        "description": "A yoga session.",
+        "priceRwf": 14500,
+        "unit": "per person",
+        "available": 10
+      },
+      {
+        "id": "nyungwe-forest-camp-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 32500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "nyungwe-forest-camp-bar",
+        "name": "Bar",
+        "category": "Bar",
+        "group": "food",
+        "description": "Starting price per drink. The bill depends on what is ordered.",
+        "priceRwf": 14500,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "nyungwe-forest-camp-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 7000,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 3,
+    "createdAt": "2025-02-10",
+    "ecoFeatures": [
+      "Composting toilets",
+      "Solar lighting"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Forest tent"
+    ],
+    "listingKind": "Lodge"
+  },
+  {
+    "id": "huye-heritage-guesthouse",
+    "name": "Huye Heritage Guesthouse",
+    "propertyType": "Guesthouse",
+    "ownerName": "Esther Mukamana",
+    "ownerId": "u-esther",
+    "locationId": "huye",
+    "district": "Huye",
+    "description": "A quiet guesthouse near the Ethnographic Museum and the university, popular with researchers and students.",
+    "image": "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.3,
+    "reviewCount": 47,
+    "badges": [
+      "Women-led"
+    ],
+    "phone": "+250 788 520 140",
+    "email": "hello@huyeheritage.rw",
+    "coordinates": {
+      "lat": -2.6,
+      "lng": 29.74
+    },
+    "services": [
+      {
+        "id": "svc-hh-1",
+        "name": "Single room",
+        "description": "Compact room with desk.",
+        "priceRwf": 30000,
+        "unit": "per night",
+        "capacity": 1,
+        "available": 8,
+        "bedType": "1 single bed",
+        "amenities": [
+          "Breakfast",
+          "Wi-Fi",
+          "Desk"
+        ],
+        "group": "room",
+        "category": "Regular"
+      },
+      {
+        "id": "svc-hh-2",
+        "name": "Double room",
+        "description": "En-suite double room.",
+        "priceRwf": 45000,
+        "unit": "per night",
+        "capacity": 2,
+        "available": 6,
+        "bedType": "1 double bed",
+        "amenities": [
+          "Breakfast",
+          "Wi-Fi"
+        ],
+        "group": "room",
+        "category": "VIP"
+      },
+      {
+        "id": "huye-heritage-guesthouse-massage",
+        "name": "Massage",
+        "category": "Massage",
+        "group": "wellness",
+        "description": "A 60-minute massage.",
+        "priceRwf": 20000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "huye-heritage-guesthouse-sauna",
+        "name": "Sauna",
+        "category": "Sauna",
+        "group": "wellness",
+        "description": "A private sauna session.",
+        "priceRwf": 12000,
+        "unit": "per person",
+        "available": 4
+      },
+      {
+        "id": "huye-heritage-guesthouse-spa",
+        "name": "Spa",
+        "category": "Spa",
+        "group": "wellness",
+        "description": "A spa treatment.",
+        "priceRwf": 35000,
+        "unit": "per person",
+        "available": 6
+      },
+      {
+        "id": "huye-heritage-guesthouse-restaurant",
+        "name": "Restaurant",
+        "category": "Restaurant",
+        "group": "food",
+        "description": "A plated meal. Price is per plate.",
+        "priceRwf": 18000,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "huye-heritage-guesthouse-bar",
+        "name": "Bar",
+        "category": "Bar",
+        "group": "food",
+        "description": "Starting price per drink. The bill depends on what is ordered.",
+        "priceRwf": 8000,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "huye-heritage-guesthouse-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 4000,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 1,
+    "createdAt": "2025-07-08",
+    "ecoFeatures": [
+      "Local staff only"
+    ],
+    "category": "Accommodation",
+    "roomTypes": [
+      "Single room",
+      "Double room"
+    ],
+    "listingKind": "Guesthouse"
+  },
+  {
+    "id": "inzu-kitchen",
+    "name": "Inzu Kitchen",
+    "ownerName": "Aline Mukamana",
+    "category": "Restaurants",
+    "locationId": "kigali",
+    "district": "Kicukiro",
+    "description": "Rwandan home cooking with a modern touch, sourced from farmers around Kigali. Try the goat brochettes with akabanga chilli oil.",
+    "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.7,
+    "reviewCount": 312,
+    "badges": [
+      "Women-led",
+      "Plastic-free"
+    ],
+    "phone": "+250 788 300 117",
+    "email": "table@inzukitchen.rw",
+    "coordinates": {
+      "lat": -1.97,
+      "lng": 30.09
+    },
+    "services": [
+      {
+        "id": "svc-5",
+        "name": "Rwandan tasting menu",
+        "description": "Five dishes from across the country",
+        "priceRwf": 25000,
+        "unit": "per person",
+        "group": "food",
+        "category": "Restaurant"
+      },
+      {
+        "id": "inzu-kitchen-bar",
+        "name": "Bar",
+        "category": "Bar",
+        "group": "food",
+        "description": "Starting price per drink. The bill depends on what is ordered.",
+        "priceRwf": 11000,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "inzu-kitchen-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 5500,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 2,
+    "createdAt": "2025-02-02",
+    "cuisine": [
+      "Rwandan",
+      "East African"
+    ],
+    "signatureDish": "Isombe with smoked fish",
+    "listingKind": "Restaurant"
+  },
+  {
+    "id": "rubavu-lakeside-grill",
+    "name": "Lakeside Grill Rubavu",
+    "ownerName": "Patrick Ndayisaba",
+    "category": "Restaurants",
+    "locationId": "rubavu",
+    "district": "Rubavu",
+    "description": "Tilapia and isambaza grilled on the beach, served with chips, plantain and fresh passion juice.",
+    "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.4,
+    "reviewCount": 188,
+    "badges": [
+      "Community-owned"
+    ],
+    "phone": "+250 788 551 230",
+    "email": "grill@rubavulakeside.rw",
+    "coordinates": {
+      "lat": -1.69,
+      "lng": 29.26
+    },
+    "services": [
+      {
+        "id": "svc-6",
+        "name": "Whole grilled tilapia",
+        "description": "With two sides",
+        "priceRwf": 12000,
+        "unit": "per plate",
+        "group": "food",
+        "category": "Restaurant"
+      },
+      {
+        "id": "rubavu-lakeside-grill-bar",
+        "name": "Bar",
+        "category": "Bar",
+        "group": "food",
+        "description": "Starting price per drink. The bill depends on what is ordered.",
+        "priceRwf": 8000,
+        "unit": "per person",
+        "available": 40
+      },
+      {
+        "id": "rubavu-lakeside-grill-coffee-shop",
+        "name": "Coffee shop",
+        "category": "Coffee shop",
+        "group": "food",
+        "description": "Coffee and a snack. Starting price per cup.",
+        "priceRwf": 4000,
+        "unit": "per person",
+        "available": 40
+      }
+    ],
+    "priceLevel": 1,
+    "createdAt": "2025-02-09",
+    "cuisine": [
+      "Seafood",
+      "Grill"
+    ],
+    "signatureDish": "Whole grilled tilapia",
+    "listingKind": "Restaurant"
+  },
+  {
+    "id": "umurage-tours",
+    "name": "Umurage Tours",
+    "ownerName": "Didier Mugisha",
+    "category": "Tour Guides",
+    "locationId": "kigali",
+    "district": "Gasabo",
+    "description": "Licensed guides offering city, culture and multi-day tours across Rwanda in English, French, Kinyarwanda and Swahili.",
+    "image": "https://images.unsplash.com/photo-1611348586804-61bf6c080437?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.9,
+    "reviewCount": 402,
+    "badges": [
+      "Eco-certified"
+    ],
+    "phone": "+250 788 600 400",
+    "email": "trips@umuragetours.rw",
+    "coordinates": {
+      "lat": -1.95,
+      "lng": 30.1
+    },
+    "services": [
+      {
+        "id": "svc-7",
+        "name": "Kigali city day tour",
+        "description": "Private guide and vehicle",
+        "priceRwf": 55000,
+        "unit": "per person",
+        "group": "activity",
+        "category": "Kigali city day tour"
+      },
+      {
+        "id": "svc-8",
+        "name": "4-day Rwanda highlights",
+        "description": "Kigali, Akagera, Kivu and Nyungwe",
+        "priceRwf": 950000,
+        "unit": "per person",
+        "group": "activity",
+        "category": "4-day Rwanda highlights"
+      }
+    ],
+    "priceLevel": 2,
+    "createdAt": "2025-02-01",
+    "listingKind": "Tour guide"
+  },
+  {
+    "id": "agaseke-weavers",
+    "name": "Agaseke Weavers Cooperative",
+    "ownerName": "Josephine Nyiraneza",
+    "category": "Handcrafts",
+    "locationId": "huye",
+    "district": "Huye",
+    "description": "Thirty-two women weave agaseke peace baskets from sisal and sweetgrass. Visit the workshop or order baskets made to your colours.",
+    "image": "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.8,
+    "reviewCount": 136,
+    "badges": [
+      "Women-led",
+      "Community-owned"
+    ],
+    "phone": "+250 788 711 090",
+    "email": "baskets@agaseke.rw",
+    "coordinates": {
+      "lat": -2.6,
+      "lng": 29.74
+    },
+    "services": [
+      {
+        "id": "svc-9",
+        "name": "Weaving workshop",
+        "description": "Two hours with a master weaver",
+        "priceRwf": 15000,
+        "unit": "per person",
+        "group": "activity",
+        "category": "Weaving workshop"
+      },
+      {
+        "id": "svc-10",
+        "name": "Medium agaseke basket",
+        "description": "Hand-woven, 20 cm",
+        "priceRwf": 18000,
+        "unit": "per item",
+        "group": "activity",
+        "category": "Medium agaseke basket"
+      }
+    ],
+    "priceLevel": 1,
+    "createdAt": "2025-02-04",
+    "listingKind": "Handcraft"
+  },
+  {
+    "id": "maraba-coffee",
+    "name": "Maraba Coffee Cooperative",
+    "ownerName": "Abakundakawa members",
+    "category": "Local Products",
+    "locationId": "huye",
+    "district": "Huye",
+    "description": "Award-winning bourbon arabica grown by smallholder farmers on the hills of Maraba. Buy beans direct or join a farm tour.",
+    "image": "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.7,
+    "reviewCount": 98,
+    "badges": [
+      "Community-owned",
+      "Eco-certified"
+    ],
+    "phone": "+250 788 812 450",
+    "email": "coffee@maraba.rw",
+    "coordinates": {
+      "lat": -2.55,
+      "lng": 29.7
+    },
+    "services": [
+      {
+        "id": "svc-11",
+        "name": "500 g roasted beans",
+        "description": "Single origin, medium roast",
+        "priceRwf": 9000,
+        "unit": "per bag",
+        "group": "activity",
+        "category": "500 g roasted beans"
+      }
+    ],
+    "priceLevel": 1,
+    "createdAt": "2025-02-06",
+    "listingKind": "Local product"
+  },
+  {
+    "id": "kivu-bike-collective",
+    "name": "Kivu Bike Collective",
+    "ownerName": "Samuel Iradukunda",
+    "category": "Transportation",
+    "locationId": "rubavu",
+    "district": "Rubavu",
+    "description": "Mountain bike hire and guided rides on the Congo Nile Trail, with luggage transfers between villages.",
+    "image": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.6,
+    "reviewCount": 77,
+    "badges": [
+      "Eco-certified"
+    ],
+    "phone": "+250 788 902 334",
+    "email": "ride@kivubike.rw",
+    "coordinates": {
+      "lat": -1.7,
+      "lng": 29.27
+    },
+    "services": [
+      {
+        "id": "svc-12",
+        "name": "Mountain bike hire",
+        "description": "Helmet and repair kit included",
+        "priceRwf": 20000,
+        "unit": "per day",
+        "group": "activity",
+        "category": "Mountain bike hire"
+      }
+    ],
+    "priceLevel": 1,
+    "createdAt": "2025-02-08",
+    "listingKind": "Transportation"
+  },
+  {
+    "id": "nyamirambo-womens-center",
+    "name": "Nyamirambo Women’s Center",
+    "ownerName": "NWC collective",
+    "category": "Community Tourism",
+    "locationId": "kigali",
+    "district": "Nyarugenge",
+    "description": "A community centre running walking tours, cooking classes and a tailoring workshop that funds literacy classes for women.",
+    "image": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.9,
+    "reviewCount": 344,
+    "badges": [
+      "Women-led",
+      "Community-owned"
+    ],
+    "phone": "+250 788 444 801",
+    "email": "tours@nwc.rw",
+    "coordinates": {
+      "lat": -1.98,
+      "lng": 30.04
+    },
+    "services": [
+      {
+        "id": "svc-13",
+        "name": "Walking tour with lunch",
+        "description": "Three-and-a-half hours",
+        "priceRwf": 30000,
+        "unit": "per person",
+        "group": "activity",
+        "category": "Walking tour with lunch"
+      }
+    ],
+    "priceLevel": 1,
+    "createdAt": "2025-02-11",
+    "listingKind": "Community tourism"
+  },
+  {
+    "id": "kinigi-guides",
+    "name": "Kinigi Community Guides",
+    "ownerName": "Emmanuel Twagirayezu",
+    "category": "Tour Guides",
+    "locationId": "volcanoes-national-park",
+    "district": "Musanze",
+    "description": "Guides born at the foot of the volcanoes, leading village walks, twin-lake hikes and Bisoke climbs.",
+    "image": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=75",
+    "rating": 4.8,
+    "reviewCount": 121,
+    "badges": [
+      "Community-owned"
+    ],
+    "phone": "+250 788 333 210",
+    "email": "guides@kinigi.rw",
+    "coordinates": {
+      "lat": -1.43,
+      "lng": 29.59
+    },
+    "services": [
+      {
+        "id": "svc-14",
+        "name": "Twin lakes day hike",
+        "description": "With canoe crossing",
+        "priceRwf": 35000,
+        "unit": "per person",
+        "group": "activity",
+        "category": "Twin lakes day hike"
+      }
+    ],
+    "priceLevel": 1,
+    "createdAt": "2025-02-13",
+    "listingKind": "Tour guide"
+  }
+]

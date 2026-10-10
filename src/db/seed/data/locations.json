@@ -1,0 +1,745 @@
+[
+  {
+    "id": "kigali",
+    "name": "Kigali",
+    "district": "Nyarugenge, Gasabo & Kicukiro",
+    "province": "City of Kigali",
+    "category": "City",
+    "interests": [
+      "Culture",
+      "History",
+      "Food"
+    ],
+    "shortDescription": "A clean, green capital spread across ridges, with art studios, markets and the Kigali Genocide Memorial.",
+    "description": "Kigali is built on a series of hills, and most visits start with a morning at the Kigali Genocide Memorial in Gisozi, where the story of 1994 is told with care. From there the city opens up: fabric stalls and fresh produce at Kimironko Market, murals and street food in Nyamirambo, contemporary painting at Inema Arts Center, and evening views over the valleys from Kimihurura. The last Saturday of each month is Umuganda, a community work morning, so plan around it.",
+    "image": "https://images.unsplash.com/photo-1611348586804-61bf6c080437?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1611348586804-61bf6c080437?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.7,
+    "reviewCount": 1284,
+    "coordinates": {
+      "lat": -1.9441,
+      "lng": 30.0619
+    },
+    "thingsToDo": [
+      "Visit the Kigali Genocide Memorial",
+      "Shop for kitenge fabric at Kimironko Market",
+      "Join a Nyamirambo women-led walking tour",
+      "See contemporary art at Inema Arts Center",
+      "Hike Mount Kigali at sunrise"
+    ],
+    "sustainability": [
+      "Single-use plastic bags have been banned nationwide since 2008",
+      "Car-free zone in the city centre on selected days",
+      "Electric moto-taxis are now available on ride apps"
+    ],
+    "priceLevel": 2,
+    "isPopular": true,
+    "visitsLastYear": 412000,
+    "createdAt": "2025-01-10"
+  },
+  {
+    "id": "volcanoes-national-park",
+    "name": "Volcanoes National Park",
+    "district": "Musanze",
+    "province": "Northern Province",
+    "category": "National Park",
+    "interests": [
+      "Wildlife",
+      "Adventure",
+      "Nature"
+    ],
+    "shortDescription": "Mountain gorilla trekking on the bamboo-covered slopes of the Virunga volcanoes.",
+    "description": "Five of the eight Virunga volcanoes rise inside this park, home to habituated families of endangered mountain gorillas. Treks start at the Kinigi park headquarters and can take from one to several hours through bamboo and nettle. Beyond gorillas, visitors track golden monkeys, hike to the crater lake on Mount Bisoke, or walk to Dian Fossey's grave at Karisoke. A share of every permit goes to communities living around the park.",
+    "image": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1557050543-4d5f4e07ef46?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.9,
+    "reviewCount": 2140,
+    "coordinates": {
+      "lat": -1.4833,
+      "lng": 29.5333
+    },
+    "thingsToDo": [
+      "Gorilla trekking (permit required)",
+      "Golden monkey tracking",
+      "Day hike to the Mount Bisoke crater lake",
+      "Hike to Dian Fossey's tomb",
+      "Overnight Mount Karisimbi climb"
+    ],
+    "sustainability": [
+      "10% of park revenue is shared with neighbouring communities",
+      "Visitor numbers per gorilla family are capped at eight people a day",
+      "Former poachers now work as porters and trackers"
+    ],
+    "priceLevel": 3,
+    "isPopular": true,
+    "visitsLastYear": 48000,
+    "createdAt": "2025-01-10"
+  },
+  {
+    "id": "nyungwe-national-park",
+    "name": "Nyungwe National Park",
+    "district": "Nyamasheke & Nyamagabe",
+    "province": "Western & Southern Provinces",
+    "category": "National Park",
+    "interests": [
+      "Nature",
+      "Wildlife",
+      "Adventure"
+    ],
+    "shortDescription": "One of Africa’s oldest montane rainforests, with a canopy walkway and chimpanzee tracking.",
+    "description": "Nyungwe protects a vast mountain rainforest in the south-west, home to 13 primate species including chimpanzees and large troops of Angolan colobus monkeys. The canopy walkway hangs about 50 metres above the forest floor, and well-marked trails lead to waterfalls and tea-covered ridges. Birders come for more than 300 recorded species, many found only in the Albertine Rift.",
+    "image": "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.8,
+    "reviewCount": 986,
+    "coordinates": {
+      "lat": -2.4833,
+      "lng": 29.2167
+    },
+    "thingsToDo": [
+      "Walk the canopy walkway",
+      "Track chimpanzees at dawn",
+      "Hike the Isumo waterfall trail",
+      "Birdwatching with a park guide",
+      "Visit the Gisakura tea estate"
+    ],
+    "sustainability": [
+      "Trails are guided to protect fragile habitats",
+      "The park supplies water to much of Rwanda",
+      "Local cooperatives make the handicrafts sold at the visitor centre"
+    ],
+    "priceLevel": 3,
+    "isPopular": true,
+    "visitsLastYear": 36000,
+    "createdAt": "2025-01-10"
+  },
+  {
+    "id": "akagera-national-park",
+    "name": "Akagera National Park",
+    "district": "Kayonza & Nyagatare",
+    "province": "Eastern Province",
+    "category": "National Park",
+    "interests": [
+      "Wildlife",
+      "Nature",
+      "Adventure"
+    ],
+    "shortDescription": "Rwanda’s savanna park, home to the Big Five, lakes and papyrus swamps.",
+    "description": "Akagera is Rwanda's savanna, with rolling grasslands, acacia woodland and a chain of lakes along the Tanzanian border. Lions returned in 2015 and black rhinos in 2017, making it a Big Five park again. Game drives are best in the early morning, and the afternoon boat trip on Lake Ihema brings you close to hippos, crocodiles and fish eagles.",
+    "image": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.7,
+    "reviewCount": 1102,
+    "coordinates": {
+      "lat": -1.8833,
+      "lng": 30.7167
+    },
+    "thingsToDo": [
+      "Self-drive or guided game drive",
+      "Boat trip on Lake Ihema",
+      "Night drive with a ranger",
+      "Behind-the-scenes conservation tour",
+      "Sport fishing on Lake Shakani"
+    ],
+    "sustainability": [
+      "Managed in partnership with communities and conservation organisations",
+      "Park revenue funds schools and clinics nearby",
+      "Solar-powered park lodges"
+    ],
+    "priceLevel": 3,
+    "isPopular": true,
+    "visitsLastYear": 54000,
+    "createdAt": "2025-01-10"
+  },
+  {
+    "id": "lake-kivu",
+    "name": "Lake Kivu",
+    "district": "Karongi",
+    "province": "Western Province",
+    "category": "Lake",
+    "interests": [
+      "Relaxation",
+      "Nature",
+      "Adventure"
+    ],
+    "shortDescription": "Deep blue lake framed by terraced hills, island boat trips and quiet beaches.",
+    "description": "Lake Kivu runs along Rwanda's western border, and Karongi sits on one of its most sheltered bays. Take a boat to Napoleon's Island, where thousands of fruit bats roost, or Amahoro Island for a swim. In the evening, listen for fishermen singing as their trimaran boats head out with lanterns. Cyclists and hikers use the lake as the backdrop for the Congo Nile Trail.",
+    "image": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.6,
+    "reviewCount": 874,
+    "coordinates": {
+      "lat": -2.06,
+      "lng": 29.35
+    },
+    "thingsToDo": [
+      "Boat trip to Napoleon's Island",
+      "Kayak between islands",
+      "Cycle a section of the Congo Nile Trail",
+      "Watch the evening fishing boats",
+      "Visit the Environment Museum in Karongi"
+    ],
+    "sustainability": [
+      "Choose paddle and kayak trips over motorboats",
+      "Buy fish from local cooperatives",
+      "Many lakeside lodges run on solar power"
+    ],
+    "priceLevel": 2,
+    "isPopular": true,
+    "visitsLastYear": 96000,
+    "createdAt": "2025-01-12"
+  },
+  {
+    "id": "musanze",
+    "name": "Musanze",
+    "district": "Musanze",
+    "province": "Northern Province",
+    "category": "Town",
+    "interests": [
+      "Adventure",
+      "Culture",
+      "Nature"
+    ],
+    "shortDescription": "The lively gateway town to the volcanoes, with caves, lakes and a busy market.",
+    "description": "Musanze, once called Ruhengeri, is where most travellers stay before trekking in Volcanoes National Park. The town has a lively market, cycling routes past potato fields, and the Musanze Caves, a lava tube more than two kilometres long. It is a good base for day trips to the twin lakes Burera and Ruhondo.",
+    "image": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.5,
+    "reviewCount": 532,
+    "coordinates": {
+      "lat": -1.4997,
+      "lng": 29.635
+    },
+    "thingsToDo": [
+      "Explore the Musanze Caves",
+      "Cycle to the twin lakes",
+      "Visit the central market",
+      "Join a community village walk"
+    ],
+    "sustainability": [
+      "Many guesthouses are family-run",
+      "Bike rental supports local youth cooperatives"
+    ],
+    "priceLevel": 2,
+    "isPopular": true,
+    "visitsLastYear": 88000,
+    "createdAt": "2025-01-12"
+  },
+  {
+    "id": "rubavu",
+    "name": "Rubavu",
+    "district": "Rubavu",
+    "province": "Western Province",
+    "category": "Town",
+    "interests": [
+      "Relaxation",
+      "Food",
+      "Nature"
+    ],
+    "shortDescription": "Lakeside beach town with palm-lined promenades, hot springs and coffee farms.",
+    "description": "Rubavu, still often called Gisenyi, has sandy beaches on the northern shore of Lake Kivu and a relaxed promenade lined with old colonial villas. Walk up Rubona hill to see hot springs where locals cook cassava, visit a coffee washing station during the harvest season, or start the Congo Nile Trail south towards Karongi.",
+    "image": "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.5,
+    "reviewCount": 698,
+    "coordinates": {
+      "lat": -1.6792,
+      "lng": 29.2589
+    },
+    "thingsToDo": [
+      "Relax on the public beach",
+      "Visit the Rubona hot springs",
+      "Tour a coffee washing station",
+      "Start the Congo Nile Trail"
+    ],
+    "sustainability": [
+      "Coffee tours pay farmers directly",
+      "Beach clean-ups run monthly with local youth groups"
+    ],
+    "priceLevel": 2,
+    "isPopular": true,
+    "visitsLastYear": 102000,
+    "createdAt": "2025-01-14"
+  },
+  {
+    "id": "huye",
+    "name": "Huye",
+    "district": "Huye",
+    "province": "Southern Province",
+    "category": "Town",
+    "interests": [
+      "Culture",
+      "History"
+    ],
+    "shortDescription": "A university town and home of the Ethnographic Museum, Rwanda’s finest collection of traditional life.",
+    "description": "Huye, formerly Butare, is Rwanda's intellectual centre and home to the University of Rwanda's oldest campus. Its Ethnographic Museum shows how Rwandans built homes, wove baskets and made music, and often hosts Intore dance performances. The town is calm, walkable and a natural stop between Kigali and Nyungwe.",
+    "image": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.4,
+    "reviewCount": 341,
+    "coordinates": {
+      "lat": -2.5967,
+      "lng": 29.7394
+    },
+    "thingsToDo": [
+      "Visit the Ethnographic Museum",
+      "Watch an Intore dance performance",
+      "Tour a local coffee cooperative",
+      "Walk the university arboretum"
+    ],
+    "sustainability": [
+      "Craft sales at the museum support weaving cooperatives",
+      "Easy to explore on foot"
+    ],
+    "priceLevel": 1,
+    "isPopular": true,
+    "visitsLastYear": 41000,
+    "createdAt": "2025-01-15"
+  },
+  {
+    "id": "nyanza",
+    "name": "Nyanza",
+    "district": "Nyanza",
+    "province": "Southern Province",
+    "category": "Town",
+    "interests": [
+      "History",
+      "Culture"
+    ],
+    "shortDescription": "Former royal capital with a reconstructed King’s Palace and long-horned Inyambo cattle.",
+    "description": "Nyanza was the seat of the Rwandan monarchy. At the King's Palace Museum in Rukari you can step inside a reconstructed thatched royal residence and see the 1930s colonial-style palace built for King Mutara III Rudahigwa. Keepers sing traditional songs to the Inyambo, sacred cattle with enormous horns.",
+    "image": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.5,
+    "reviewCount": 287,
+    "coordinates": {
+      "lat": -2.3517,
+      "lng": 29.7509
+    },
+    "thingsToDo": [
+      "Tour the King's Palace Museum",
+      "Meet the Inyambo cattle and their keepers",
+      "Visit the Rwesero Art Museum"
+    ],
+    "sustainability": [
+      "Museum fees fund cultural preservation",
+      "Local guides share oral history"
+    ],
+    "priceLevel": 1,
+    "isPopular": true,
+    "visitsLastYear": 38000,
+    "createdAt": "2025-01-15"
+  },
+  {
+    "id": "rusizi",
+    "name": "Rusizi",
+    "district": "Rusizi",
+    "province": "Western Province",
+    "category": "Town",
+    "interests": [
+      "Nature",
+      "Relaxation"
+    ],
+    "shortDescription": "Rwanda’s south-western corner on Lake Kivu, with islands, waterfalls and easy access to Nyungwe.",
+    "description": "Rusizi, centred on the town of Kamembe, sits at the southern tip of Lake Kivu where the Rusizi River flows out towards Lake Tanganyika. Take a boat to Nkombo Island, explore quiet bays, or use it as a base for the western side of Nyungwe. It sees far fewer visitors than the north, which is part of its appeal.",
+    "image": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.3,
+    "reviewCount": 164,
+    "coordinates": {
+      "lat": -2.4846,
+      "lng": 28.9075
+    },
+    "thingsToDo": [
+      "Boat trip to Nkombo Island",
+      "Visit the Rusizi River bridge",
+      "Day trip to Nyungwe",
+      "Taste fresh isambaza fish"
+    ],
+    "sustainability": [
+      "Island homestays keep income in the community",
+      "Low visitor numbers mean low impact"
+    ],
+    "priceLevel": 1,
+    "isPopular": true,
+    "visitsLastYear": 19000,
+    "createdAt": "2025-01-18"
+  },
+  {
+    "id": "twin-lakes-burera-ruhondo",
+    "name": "Twin Lakes Burera & Ruhondo",
+    "district": "Burera",
+    "province": "Northern Province",
+    "category": "Hidden Gem",
+    "interests": [
+      "Nature",
+      "Relaxation",
+      "Adventure"
+    ],
+    "shortDescription": "Two volcanic lakes ringed by terraced hills, best explored by dugout canoe.",
+    "description": "Burera and Ruhondo lie side by side below the Virunga volcanoes, separated by a narrow ridge. Paddle a canoe with a local fisherman, hike the ridge for views of both lakes, or stay at a small eco-lodge on the shore. Few tour groups come here, so you often have the water to yourself.",
+    "image": "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.7,
+    "reviewCount": 118,
+    "coordinates": {
+      "lat": -1.47,
+      "lng": 29.75
+    },
+    "thingsToDo": [
+      "Canoe with a local fisherman",
+      "Hike the ridge between the lakes",
+      "Visit the Ntaruka hydro dam viewpoint"
+    ],
+    "sustainability": [
+      "Canoe trips are run by a fishing cooperative",
+      "Eco-lodges use rainwater harvesting"
+    ],
+    "priceLevel": 1,
+    "isHiddenGem": true,
+    "visitsLastYear": 7200,
+    "createdAt": "2025-03-02"
+  },
+  {
+    "id": "gishwati-mukura",
+    "name": "Gishwati-Mukura National Park",
+    "district": "Ngororero & Rutsiro",
+    "province": "Western Province",
+    "category": "Hidden Gem",
+    "interests": [
+      "Nature",
+      "Wildlife"
+    ],
+    "shortDescription": "Rwanda’s newest national park, a restored forest with chimpanzees and golden monkeys.",
+    "description": "Gishwati-Mukura became a national park in 2015 after years of restoration of a badly degraded forest. A small community of chimpanzees lives here alongside golden and L'Hoest's monkeys. Visits are guided by trackers from nearby villages, and you can join tree-planting or beekeeping activities run by local cooperatives.",
+    "image": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.6,
+    "reviewCount": 64,
+    "coordinates": {
+      "lat": -1.82,
+      "lng": 29.37
+    },
+    "thingsToDo": [
+      "Chimpanzee tracking",
+      "Waterfall hike",
+      "Visit a beekeeping cooperative",
+      "Plant a native tree"
+    ],
+    "sustainability": [
+      "A living example of forest restoration",
+      "Trackers are recruited from local villages"
+    ],
+    "priceLevel": 2,
+    "isHiddenGem": true,
+    "visitsLastYear": 2400,
+    "createdAt": "2025-03-04"
+  },
+  {
+    "id": "musanze-caves",
+    "name": "Musanze Caves",
+    "district": "Musanze",
+    "province": "Northern Province",
+    "category": "Hidden Gem",
+    "interests": [
+      "Adventure",
+      "History"
+    ],
+    "shortDescription": "A two-kilometre lava tube with bat colonies and dramatic light shafts.",
+    "description": "Formed by lava flows from the Virunga volcanoes, the Musanze Caves stretch for more than two kilometres under the edge of town. A guided walk on lit paths takes about an hour and passes collapsed sections where sunlight pours in. The caves also hold an important place in local history and oral tradition.",
+    "image": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.4,
+    "reviewCount": 93,
+    "coordinates": {
+      "lat": -1.5,
+      "lng": 29.62
+    },
+    "thingsToDo": [
+      "Guided cave walk",
+      "Bat watching at dusk"
+    ],
+    "sustainability": [
+      "Group sizes are limited to protect bat colonies"
+    ],
+    "priceLevel": 1,
+    "isHiddenGem": true,
+    "visitsLastYear": 9100,
+    "createdAt": "2025-03-06"
+  },
+  {
+    "id": "rusumo-falls",
+    "name": "Rusumo Falls",
+    "district": "Kirehe",
+    "province": "Eastern Province",
+    "category": "Hidden Gem",
+    "interests": [
+      "Nature",
+      "History"
+    ],
+    "shortDescription": "A powerful waterfall on the Akagera River at the Tanzanian border.",
+    "description": "At Rusumo the Akagera River drops through a rocky gorge right on the border with Tanzania. The falls are short but loud and wide, especially in the rainy season. It is an easy stop on the drive through the Eastern Province, and local guides explain the falls' role in regional history.",
+    "image": "https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1489392191049-fc10c97e64b6?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1439066615861-d1af74d74000?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.2,
+    "reviewCount": 47,
+    "coordinates": {
+      "lat": -2.38,
+      "lng": 30.78
+    },
+    "thingsToDo": [
+      "Viewpoint walk over the gorge",
+      "Stop at the Kirehe roadside markets"
+    ],
+    "sustainability": [
+      "Buy snacks and crafts from roadside vendors"
+    ],
+    "priceLevel": 1,
+    "isHiddenGem": true,
+    "visitsLastYear": 5300,
+    "createdAt": "2025-03-10"
+  },
+  {
+    "id": "gisakura-tea-estate",
+    "name": "Gisakura Tea Estate",
+    "district": "Nyamasheke",
+    "province": "Western Province",
+    "category": "Hidden Gem",
+    "interests": [
+      "Food",
+      "Nature",
+      "Culture"
+    ],
+    "shortDescription": "Emerald tea fields on the edge of Nyungwe where you can pick and taste fresh leaf.",
+    "description": "Gisakura's tea fields roll right up to the edge of Nyungwe forest. Walk the rows with pickers in the morning, then follow the leaves through the factory to see how Rwandan black tea is withered, rolled and dried. Finish with a tasting overlooking the forest canopy.",
+    "image": "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.6,
+    "reviewCount": 72,
+    "coordinates": {
+      "lat": -2.44,
+      "lng": 29.08
+    },
+    "thingsToDo": [
+      "Pick tea with local workers",
+      "Factory tour",
+      "Tea tasting"
+    ],
+    "sustainability": [
+      "Tours are run with the estate workers’ cooperative"
+    ],
+    "priceLevel": 1,
+    "isHiddenGem": true,
+    "visitsLastYear": 4100,
+    "createdAt": "2025-03-12"
+  },
+  {
+    "id": "buhanga-eco-park",
+    "name": "Buhanga Eco-Park",
+    "district": "Musanze",
+    "province": "Northern Province",
+    "category": "Hidden Gem",
+    "interests": [
+      "Nature",
+      "Culture",
+      "History"
+    ],
+    "shortDescription": "A sacred forest once used for royal ceremonies, now a quiet walking reserve.",
+    "description": "Buhanga is a small, ancient forest outside Musanze where Rwandan kings were once enthroned. Old trees, a sacred spring and stone formations tied to local legends make it a peaceful half-day outing after a trek. Guides from the surrounding villages share the stories behind each site.",
+    "image": "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.3,
+    "reviewCount": 38,
+    "coordinates": {
+      "lat": -1.47,
+      "lng": 29.66
+    },
+    "thingsToDo": [
+      "Guided cultural forest walk",
+      "Visit the sacred spring"
+    ],
+    "sustainability": [
+      "Entry fees fund forest protection"
+    ],
+    "priceLevel": 1,
+    "isHiddenGem": true,
+    "visitsLastYear": 2900,
+    "createdAt": "2025-03-15"
+  },
+  {
+    "id": "kigali-genocide-memorial",
+    "name": "Kigali Genocide Memorial",
+    "district": "Gasabo",
+    "province": "City of Kigali",
+    "category": "Cultural Site",
+    "interests": [
+      "History",
+      "Culture"
+    ],
+    "shortDescription": "The resting place of more than 250,000 victims and a place of remembrance and learning.",
+    "description": "The memorial in Gisozi tells the story of the 1994 Genocide against the Tutsi, honours the victims laid to rest in its gardens, and educates visitors about preventing genocide. Entry is free; audio guides are available in several languages. Allow at least two hours, and dress and behave respectfully.",
+    "image": "https://images.unsplash.com/photo-1611348586804-61bf6c080437?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1611348586804-61bf6c080437?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.9,
+    "reviewCount": 3120,
+    "coordinates": {
+      "lat": -1.9306,
+      "lng": 30.0606
+    },
+    "thingsToDo": [
+      "Audio-guided visit of the exhibitions",
+      "Walk the memorial gardens",
+      "Visit the education centre"
+    ],
+    "sustainability": [
+      "Donations support survivors and peace education"
+    ],
+    "priceLevel": 1,
+    "visitsLastYear": 156000,
+    "createdAt": "2025-01-10"
+  },
+  {
+    "id": "ethnographic-museum",
+    "name": "Ethnographic Museum",
+    "district": "Huye",
+    "province": "Southern Province",
+    "category": "Cultural Site",
+    "interests": [
+      "Culture",
+      "History"
+    ],
+    "shortDescription": "Rwanda’s richest collection of traditional crafts, tools and architecture.",
+    "description": "Gifted by Belgium in 1989, the museum's seven galleries cover hunting, farming, basketry, pottery, traditional dress and royal architecture. Ask in advance about Intore dance performances in the courtyard.",
+    "image": "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.6,
+    "reviewCount": 410,
+    "coordinates": {
+      "lat": -2.58,
+      "lng": 29.75
+    },
+    "thingsToDo": [
+      "Guided gallery tour",
+      "Intore dance performance",
+      "Craft shop"
+    ],
+    "sustainability": [
+      "Supports cultural preservation and local weavers"
+    ],
+    "priceLevel": 1,
+    "visitsLastYear": 28000,
+    "createdAt": "2025-01-15"
+  },
+  {
+    "id": "iby-iwacu-village",
+    "name": "Iby'Iwacu Cultural Village",
+    "district": "Musanze",
+    "province": "Northern Province",
+    "category": "Cultural Site",
+    "interests": [
+      "Culture",
+      "Food"
+    ],
+    "shortDescription": "A community village near the volcanoes run by former poachers turned conservationists.",
+    "description": "In Kinigi, close to the gorilla trekking headquarters, this community-run village lets you grind sorghum, shoot a traditional bow, meet a healer and watch Intore dancers. It was founded so that people who once poached in the park could earn a living from tourism instead.",
+    "image": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=75",
+    "gallery": [
+      "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=75",
+      "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75"
+    ],
+    "rating": 4.6,
+    "reviewCount": 522,
+    "coordinates": {
+      "lat": -1.43,
+      "lng": 29.57
+    },
+    "thingsToDo": [
+      "Traditional dance performance",
+      "Banana beer making",
+      "Visit the reconstructed king’s house"
+    ],
+    "sustainability": [
+      "Community-owned",
+      "Supports former poachers and their families"
+    ],
+    "priceLevel": 1,
+    "visitsLastYear": 31000,
+    "createdAt": "2025-01-20"
+  }
+]

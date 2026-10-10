@@ -1,0 +1,216 @@
+[
+  {
+    "id": "user-tourist-1",
+    "name": "Amani Kayitesi",
+    "email": "tourist@tourista.rw",
+    "role": "tourist",
+    "country": "Rwanda",
+    "phone": "+250 788 000 111",
+    "joinedAt": "2025-11-02"
+  },
+  {
+    "id": "user-business-1",
+    "name": "Claudine Uwase",
+    "email": "business@tourista.rw",
+    "role": "business_owner",
+    "businessName": "Virunga Hospitality",
+    "country": "Rwanda",
+    "phone": "+250 788 123 401",
+    "bankAccount": "4001234567890123",
+    "mtnNumber": "+250 788 123 401",
+    "airtelNumber": "+250 733 123 401",
+    "joinedAt": "2025-09-14"
+  },
+  {
+    "id": "user-admin-1",
+    "name": "Tourista Admin",
+    "email": "admin@tourista.rw",
+    "role": "admin",
+    "country": "Rwanda",
+    "joinedAt": "2025-06-01"
+  },
+  {
+    "id": "u-lisa",
+    "name": "Lisa Hartmann",
+    "email": "lisa@example.com",
+    "role": "tourist",
+    "country": "Germany",
+    "joinedAt": "2025-10-03"
+  },
+  {
+    "id": "u-kevin",
+    "name": "Kevin Nshuti",
+    "email": "kevin@example.com",
+    "role": "tourist",
+    "country": "Rwanda",
+    "joinedAt": "2025-12-11"
+  },
+  {
+    "id": "u-grace",
+    "name": "Grace Ingabire",
+    "email": "grace@example.com",
+    "role": "tourist",
+    "country": "Rwanda",
+    "joinedAt": "2026-01-08"
+  },
+  {
+    "id": "u-sarah",
+    "name": "Sarah Mitchell",
+    "email": "sarah@example.com",
+    "role": "tourist",
+    "country": "United Kingdom",
+    "joinedAt": "2025-08-21"
+  },
+  {
+    "id": "u-tom",
+    "name": "Tom Becker",
+    "email": "tom@example.com",
+    "role": "tourist",
+    "country": "Netherlands",
+    "joinedAt": "2026-02-14"
+  },
+  {
+    "id": "u-ines",
+    "name": "Inès Rousseau",
+    "email": "ines@example.com",
+    "role": "tourist",
+    "country": "France",
+    "joinedAt": "2026-03-02"
+  },
+  {
+    "id": "u-diane",
+    "name": "Diane Umutoni",
+    "email": "diane@example.com",
+    "role": "tourist",
+    "country": "Canada",
+    "joinedAt": "2026-03-19"
+  },
+  {
+    "id": "u-james",
+    "name": "James Otieno",
+    "email": "james@example.com",
+    "role": "tourist",
+    "country": "Kenya",
+    "joinedAt": "2026-04-05"
+  },
+  {
+    "id": "u-mei",
+    "name": "Mei Tanaka",
+    "email": "mei@example.com",
+    "role": "tourist",
+    "country": "Japan",
+    "joinedAt": "2026-04-27"
+  },
+  {
+    "id": "u-carlos",
+    "name": "Carlos Mendes",
+    "email": "carlos@example.com",
+    "role": "tourist",
+    "country": "Brazil",
+    "joinedAt": "2026-05-16"
+  },
+  {
+    "id": "u-aisha",
+    "name": "Aisha Bello",
+    "email": "aisha@example.com",
+    "role": "tourist",
+    "country": "Nigeria",
+    "joinedAt": "2026-06-02"
+  },
+  {
+    "id": "u-olivia",
+    "name": "Olivia Brown",
+    "email": "olivia@example.com",
+    "role": "tourist",
+    "country": "United States",
+    "joinedAt": "2026-06-29"
+  },
+  {
+    "id": "u-patrick",
+    "name": "Patrick Habimana",
+    "email": "patrick@example.com",
+    "role": "tourist",
+    "country": "Rwanda",
+    "joinedAt": "2026-07-12"
+  },
+  {
+    "id": "u-noah",
+    "name": "Noah Schmidt",
+    "email": "noah@example.com",
+    "role": "tourist",
+    "country": "Austria",
+    "joinedAt": "2026-08-03"
+  },
+  {
+    "id": "u-fatou",
+    "name": "Fatou Diallo",
+    "email": "fatou@example.com",
+    "role": "tourist",
+    "country": "Senegal",
+    "joinedAt": "2026-08-25"
+  },
+  {
+    "id": "u-emma",
+    "name": "Emma Larsen",
+    "email": "emma@example.com",
+    "role": "tourist",
+    "country": "Denmark",
+    "joinedAt": "2026-09-10"
+  },
+  {
+    "id": "u-jean",
+    "name": "Jean-Paul Mugisha",
+    "email": "jeanpaul@umurage.rw",
+    "role": "business_owner",
+    "country": "Rwanda",
+    "joinedAt": "2025-07-30",
+    "businessName": "Umurage",
+    "bankAccount": "4001987654321098",
+    "mtnNumber": "+250 788 111 001",
+    "airtelNumber": "+250 733 111 001"
+  },
+  {
+    "id": "u-esther",
+    "name": "Esther Mukamana",
+    "email": "esther@agaseke.rw",
+    "role": "business_owner",
+    "country": "Rwanda",
+    "joinedAt": "2025-08-09",
+    "businessName": "Agaseke",
+    "bankAccount": "4001555666777888",
+    "mtnNumber": "+250 789 222 002",
+    "airtelNumber": "+250 732 222 002"
+  },
+  {
+    "id": "u-eric",
+    "name": "Eric Ndayisaba",
+    "email": "eric@kivubikes.rw",
+    "role": "business_owner",
+    "country": "Rwanda",
+    "joinedAt": "2025-10-18",
+    "businessName": "Kivu Bikes",
+    "bankAccount": "4001444333222111",
+    "mtnNumber": "+250 788 333 003",
+    "airtelNumber": "+250 733 333 003"
+  },
+  {
+    "id": "u-alice",
+    "name": "Alice Uwimana",
+    "email": "alice@inzukitchen.rw",
+    "role": "business_owner",
+    "country": "Rwanda",
+    "joinedAt": "2026-01-22",
+    "businessName": "Inzu Kitchen",
+    "bankAccount": "4001222111000999",
+    "mtnNumber": "+250 789 444 004",
+    "airtelNumber": "+250 732 444 004"
+  },
+  {
+    "id": "u-rdb",
+    "name": "Visit Rwanda Desk",
+    "email": "desk@tourista.rw",
+    "role": "admin",
+    "country": "Rwanda",
+    "joinedAt": "2025-06-01"
+  }
+]

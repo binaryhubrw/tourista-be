@@ -1,0 +1,180 @@
+[
+  {
+    "id": "intore-dance-evening",
+    "title": "Intore dance evening",
+    "type": "Traditional Dance",
+    "locationId": "iby-iwacu-village",
+    "locationName": "Iby'Iwacu Cultural Village, Musanze",
+    "description": "Watch the Intore, the dance of heroes, performed with drums, spears and flowing headdresses, then learn a few steps yourself.",
+    "image": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=75",
+    "duration": "2 hours",
+    "priceRwf": 25000,
+    "rating": 4.8,
+    "reviewCount": 312,
+    "hostName": "Iby'Iwacu community",
+    "interests": [
+      "Culture"
+    ],
+    "communityLed": true,
+    "createdAt": "2025-02-01"
+  },
+  {
+    "id": "nyamirambo-food-walk",
+    "title": "Nyamirambo food & culture walk",
+    "type": "Food",
+    "locationId": "kigali",
+    "locationName": "Nyamirambo, Kigali",
+    "description": "A women-led walk through Kigali’s liveliest neighbourhood, ending with a home-cooked lunch of isombe, ibitoke and brochettes.",
+    "image": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=75",
+    "duration": "3.5 hours",
+    "priceRwf": 30000,
+    "rating": 4.9,
+    "reviewCount": 428,
+    "hostName": "Nyamirambo Women’s Center",
+    "interests": [
+      "Food",
+      "Culture"
+    ],
+    "communityLed": true,
+    "createdAt": "2025-02-03"
+  },
+  {
+    "id": "imigongo-art-workshop",
+    "title": "Imigongo art workshop",
+    "type": "Crafts",
+    "locationId": "kigali",
+    "locationName": "Kigali",
+    "description": "Make your own imigongo panel, the geometric relief art of eastern Rwanda traditionally shaped from cow dung and natural pigments.",
+    "image": "https://images.unsplash.com/photo-1528396518501-b53b655eb9b3?auto=format&fit=crop&w=1200&q=75",
+    "duration": "3 hours",
+    "priceRwf": 35000,
+    "rating": 4.7,
+    "reviewCount": 96,
+    "hostName": "Kakira Imigongo Cooperative",
+    "interests": [
+      "Culture"
+    ],
+    "communityLed": true,
+    "createdAt": "2025-02-06"
+  },
+  {
+    "id": "coffee-farm-to-cup",
+    "title": "Coffee from farm to cup",
+    "type": "Coffee & Tea",
+    "locationId": "huye",
+    "locationName": "Maraba, Huye",
+    "description": "Pick ripe cherries with farmers, follow the beans through washing and drying, then roast and brew your own cup of Rwandan arabica.",
+    "image": "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&w=1200&q=75",
+    "duration": "Half day",
+    "priceRwf": 28000,
+    "rating": 4.8,
+    "reviewCount": 204,
+    "hostName": "Maraba Coffee Cooperative",
+    "interests": [
+      "Food",
+      "Culture"
+    ],
+    "communityLed": true,
+    "createdAt": "2025-02-08"
+  },
+  {
+    "id": "village-homestay",
+    "title": "Village homestay near the volcanoes",
+    "type": "Village Life",
+    "locationId": "musanze",
+    "locationName": "Kinigi, Musanze",
+    "description": "Spend a night with a farming family: harvest potatoes, cook dinner over a wood fire and hear stories from the elders.",
+    "image": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75",
+    "duration": "1 night",
+    "priceRwf": 45000,
+    "rating": 4.7,
+    "reviewCount": 88,
+    "hostName": "Kinigi Homestay Network",
+    "interests": [
+      "Culture",
+      "Food"
+    ],
+    "communityLed": true,
+    "createdAt": "2025-02-12"
+  },
+  {
+    "id": "kings-palace-tour",
+    "title": "King's Palace guided tour",
+    "type": "Historical Site",
+    "locationId": "nyanza",
+    "locationName": "Rukari, Nyanza",
+    "description": "Explore the reconstructed royal residence, the 1930s palace of King Mutara III and meet the Inyambo cattle with their singing keepers.",
+    "image": "https://images.unsplash.com/photo-1523805009345-7448845a9e53?auto=format&fit=crop&w=1200&q=75",
+    "duration": "2 hours",
+    "priceRwf": 15000,
+    "rating": 4.6,
+    "reviewCount": 175,
+    "hostName": "Rwanda Cultural Heritage Academy",
+    "interests": [
+      "History",
+      "Culture"
+    ],
+    "communityLed": false,
+    "createdAt": "2025-02-14"
+  },
+  {
+    "id": "congo-nile-trail-cycle",
+    "title": "Congo Nile Trail cycling day",
+    "type": "Adventure",
+    "locationId": "lake-kivu",
+    "locationName": "Rubavu to Karongi",
+    "description": "Ride a section of the Congo Nile Trail along Lake Kivu on dirt roads through coffee farms and fishing villages, with a support vehicle.",
+    "image": "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=75",
+    "duration": "Full day",
+    "priceRwf": 60000,
+    "rating": 4.8,
+    "reviewCount": 142,
+    "hostName": "Kivu Bike Collective",
+    "interests": [
+      "Adventure",
+      "Nature"
+    ],
+    "communityLed": true,
+    "createdAt": "2025-02-18"
+  },
+  {
+    "id": "akagera-boat-safari",
+    "title": "Lake Ihema boat safari",
+    "type": "Wildlife",
+    "locationId": "akagera-national-park",
+    "locationName": "Akagera National Park",
+    "description": "A late-afternoon boat trip past hippo pods, Nile crocodiles and nesting fish eagles as the sun sets over the savanna.",
+    "image": "https://images.unsplash.com/photo-1516426122078-c23e76319801?auto=format&fit=crop&w=1200&q=75",
+    "duration": "1.5 hours",
+    "priceRwf": 50000,
+    "rating": 4.7,
+    "reviewCount": 233,
+    "hostName": "Akagera park rangers",
+    "interests": [
+      "Wildlife",
+      "Nature"
+    ],
+    "communityLed": false,
+    "createdAt": "2025-02-20"
+  },
+  {
+    "id": "kigali-city-cultural-tour",
+    "title": "Kigali city cultural tour",
+    "type": "Cultural Tour",
+    "locationId": "kigali",
+    "locationName": "Kigali",
+    "description": "A full-day introduction to Kigali: the Genocide Memorial, Kimironko Market, Inema Arts Center and a sunset view from Rebero hill.",
+    "image": "https://images.unsplash.com/photo-1611348586804-61bf6c080437?auto=format&fit=crop&w=1200&q=75",
+    "duration": "Full day",
+    "priceRwf": 55000,
+    "rating": 4.8,
+    "reviewCount": 389,
+    "hostName": "Umurage Tours",
+    "interests": [
+      "Culture",
+      "History"
+    ],
+    "communityLed": false,
+    "createdAt": "2025-02-22"
+  }
+]

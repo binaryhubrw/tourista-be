@@ -1,0 +1,31 @@
+# Local/staging stack: a single-node MongoDB replica set (transactions need one) + the API.
+# For production, prefer a managed replica set (e.g. MongoDB Atlas) and set MONGODB_URI accordingly.
+services:
+  mongo:
+    image: mongo:7
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    volumes: ["mongo-data:/data/db"]
+    healthcheck:
+      # Initiates the replica set on first start; healthy once this node is PRIMARY.
+      test: >
+        mongosh --quiet --eval "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo:27017'}]}).ok }" | grep -q 1
+      interval: 5s
+      timeout: 10s
+      retries: 20
+    restart: unless-stopped
+
+  api:
+    build: .
+    depends_on:
+      mongo: { condition: service_healthy }
+    ports: ["8000:8000"]
+    env_file: [.env.docker]
+    environment:
+      MONGODB_URI: mongodb://mongo:27017/tourista?replicaSet=rs0
+      UPLOAD_DIR: /app/uploads
+    volumes: ["uploads:/app/uploads"]
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
+  uploads:

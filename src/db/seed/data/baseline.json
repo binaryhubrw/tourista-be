@@ -1,0 +1,171 @@
+{
+  "totals": {
+    "tourists": 18432,
+    "locations": 0,
+    "businesses": 0,
+    "reviews": 0,
+    "itineraries": 2716,
+    "bookings": 4890
+  },
+  "monthlyTrend": [
+    {
+      "month": "Oct",
+      "domestic": 4100,
+      "international": 6200
+    },
+    {
+      "month": "Nov",
+      "domestic": 3900,
+      "international": 5800
+    },
+    {
+      "month": "Dec",
+      "domestic": 6800,
+      "international": 7400
+    },
+    {
+      "month": "Jan",
+      "domestic": 3600,
+      "international": 6900
+    },
+    {
+      "month": "Feb",
+      "domestic": 3400,
+      "international": 7100
+    },
+    {
+      "month": "Mar",
+      "domestic": 3200,
+      "international": 4800
+    },
+    {
+      "month": "Apr",
+      "domestic": 2900,
+      "international": 3900
+    },
+    {
+      "month": "May",
+      "domestic": 3300,
+      "international": 4300
+    },
+    {
+      "month": "Jun",
+      "domestic": 4500,
+      "international": 7800
+    },
+    {
+      "month": "Jul",
+      "domestic": 5600,
+      "international": 9100
+    },
+    {
+      "month": "Aug",
+      "domestic": 5900,
+      "international": 9600
+    },
+    {
+      "month": "Sep",
+      "domestic": 4700,
+      "international": 8200
+    }
+  ],
+  "popularLocations": [],
+  "userInterests": [
+    {
+      "name": "Wildlife",
+      "value": 31
+    },
+    {
+      "name": "Culture",
+      "value": 24
+    },
+    {
+      "name": "Nature",
+      "value": 19
+    },
+    {
+      "name": "Adventure",
+      "value": 11
+    },
+    {
+      "name": "Food",
+      "value": 8
+    },
+    {
+      "name": "History",
+      "value": 5
+    },
+    {
+      "name": "Relaxation",
+      "value": 2
+    }
+  ],
+  "highTrafficLocations": [
+    {
+      "name": "Kigali Genocide Memorial",
+      "visitsPerDay": 430,
+      "capacity": 600
+    },
+    {
+      "name": "Kimironko Market",
+      "visitsPerDay": 380,
+      "capacity": 500
+    },
+    {
+      "name": "Rubavu beach",
+      "visitsPerDay": 280,
+      "capacity": 450
+    },
+    {
+      "name": "Lake Kivu, Karongi",
+      "visitsPerDay": 260,
+      "capacity": 400
+    },
+    {
+      "name": "Musanze town",
+      "visitsPerDay": 240,
+      "capacity": 350
+    },
+    {
+      "name": "Akagera, south gate",
+      "visitsPerDay": 150,
+      "capacity": 220
+    }
+  ],
+  "economicImpact": {
+    "localRevenueRwf": 4820000000,
+    "jobsSupported": 3640,
+    "womenLedBusinesses": 212,
+    "communityProjects": 58,
+    "revenueByCategory": [
+      {
+        "category": "Accommodation",
+        "revenueRwf": 1920000000
+      },
+      {
+        "category": "Tour Guides",
+        "revenueRwf": 980000000
+      },
+      {
+        "category": "Restaurants",
+        "revenueRwf": 760000000
+      },
+      {
+        "category": "Community Tourism",
+        "revenueRwf": 420000000
+      },
+      {
+        "category": "Handcrafts",
+        "revenueRwf": 310000000
+      },
+      {
+        "category": "Transportation",
+        "revenueRwf": 260000000
+      },
+      {
+        "category": "Local Products",
+        "revenueRwf": 170000000
+      }
+    ]
+  }
+}
