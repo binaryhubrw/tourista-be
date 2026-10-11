@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { BADGES, BUSINESS_CATEGORIES, LISTING_KINDS, OFFERING_GROUPS, PROPERTY_TYPES } from '../domain/catalog.js';
+import { BADGES, BUSINESS_CATEGORIES, LISTING_KINDS, OFFERING_GROUPS, PROPERTY_TYPES, vehiclePlates } from '../domain/catalog.js';
 import { maskBank } from '../domain/payout.js';
 import { Business, Location, User } from '../models/index.js';
 import { ah } from '../utils/async.js';
-import { forbidden, notFound, unprocessable } from '../utils/errors.js';
+import { conflict, forbidden, notFound, unprocessable } from '../utils/errors.js';
 import { newId } from '../utils/ids.js';
 import { toDto, toDtos } from '../utils/dto.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
@@ -25,6 +25,16 @@ const serviceInput = z.object({
   amenities: z.array(z.string().trim().max(80)).max(50).optional(),
   group: z.enum(OFFERING_GROUPS).optional(),
   category: z.string().trim().max(60).optional(),
+  // Vehicles
+  brand: z.string().trim().max(60).optional(),
+  image: z.string().max(2_000_000).optional(),
+  plateNumber: z.string().trim().max(20).optional(),
+  plates: z.array(z.string().trim().min(1).max(20)).max(100).optional(),
+  units: z.array(z.object({
+    plate: z.string().trim().min(1, 'Every car needs a registration plate.').max(20),
+    image: z.string().max(2_000_000).optional(),
+    level: z.string().trim().max(60).optional(),
+  })).max(100).optional(),
 });
 
 const kinds = LISTING_KINDS.map((k) => k.id) as [string, ...string[]];
@@ -63,7 +73,18 @@ async function normalise(input: Partial<BusinessInput>, actor: { id: string; rol
     if (!loc) throw unprocessable('Choose a location that exists.');
     if (!input.district && !existing?.district) out.district = loc.district;
   }
-  if (input.services) out.services = input.services.map((s) => ({ ...s, id: s.id || newId('svc') }));
+  if (input.services) {
+    out.services = input.services.map((s) => ({ ...s, id: s.id || newId('svc') }));
+    // A registration plate identifies one physical car, so it can appear only once in a listing.
+    const seen = new Set<string>();
+    for (const s of out.services) {
+      for (const plate of vehiclePlates(s)) {
+        const key = plate.replace(/\s+/g, '').toUpperCase();
+        if (seen.has(key)) throw conflict(`Plate ${plate} is already used in this fleet.`);
+        seen.add(key);
+      }
+    }
+  }
   // Owners always own what they create; only admins may assign someone else.
   if (actor.role !== 'admin') delete out.ownerId;
   return out;
@@ -130,10 +151,20 @@ businessesRouter.get('/:id/', ah(async (req, res) => {
   res.json(toDto(doc, ['bookingSeq']));
 }));
 
-businessesRouter.patch('/:id/', authenticate, requireRole('business_owner', 'admin'), persistImages, ah(async (req, res) => {
+businessesRouter.patch('/:id/', authenticate, requireRole('business_owner', 'staff', 'admin'), persistImages, ah(async (req, res) => {
   const existing = await Business.findById(req.params.id).lean<any>();
   if (!existing) throw notFound('Business');
-  if (req.user!.role !== 'admin' && existing.ownerId !== req.user!.id) throw forbidden('You can only edit your own listings.');
+  const user = req.user!;
+  if (user.role === 'staff') {
+    // Staff keep their branch's offerings and fleet up to date; everything else belongs to the owner.
+    if (existing.ownerId !== user.ownerId || !(user.assignedListingIds ?? []).includes(existing.id ?? existing._id)) {
+      throw forbidden('You can only edit the branches assigned to you.');
+    }
+    const extra = Object.keys(req.body ?? {}).filter((k) => !['services', 'id', 'rating', 'reviewCount', 'createdAt'].includes(k));
+    if (extra.length) throw forbidden('Staff can update services and vehicles only. Ask the owner to change other details.');
+  } else if (user.role !== 'admin' && existing.ownerId !== user.id) {
+    throw forbidden('You can only edit your own listings.');
+  }
   // rating, reviewCount, createdAt and id are not in the schema, so they are stripped.
   const patch = provided(body(req, businessInput.partial()), req.body);
   const data = await normalise(patch, req.user!, existing);

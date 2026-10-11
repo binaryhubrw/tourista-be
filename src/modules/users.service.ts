@@ -1,4 +1,5 @@
 import { maskBank } from '../domain/payout.js';
+import { User } from '../models/index.js';
 import { toDto } from '../utils/dto.js';
 import type { AuthUser } from '../middleware/auth.js';
 
@@ -18,6 +19,13 @@ export function publicOwnerProfile(doc: any) {
     ...(doc.mtnNumber ? { mtnNumber: doc.mtnNumber } : {}),
     ...(doc.airtelNumber ? { airtelNumber: doc.airtelNumber } : {}),
   };
+}
+
+/** Staff inherit the trading name of the owner they work for, which the frontend shows in headers. */
+export async function withStaffOwner<T extends { role?: string; ownerId?: string; businessName?: string }>(dto: T): Promise<T> {
+  if (dto.role !== 'staff' || !dto.ownerId) return dto;
+  const owner = await User.findById(dto.ownerId, { businessName: 1, name: 1 }).lean<any>();
+  return { ...dto, businessName: owner?.businessName || owner?.name || dto.businessName };
 }
 
 /** Public shape of a user. Payout accounts are included only for the user themself and admins. */

@@ -19,6 +19,19 @@ async function persistRecord(rec: any) {
   if (!rec || typeof rec !== 'object') return;
   if ('image' in rec) rec.image = await persist(rec.image);
   if ('avatar' in rec) rec.avatar = await persist(rec.avatar);
+  // Payment and refund proof photos (transfer screenshots, receipts).
+  for (const key of ['screenshot', 'proof', 'travelerProof', 'ownerReturnProof', 'travelerReceivedProof']) {
+    if (key in rec) rec[key] = await persist(rec[key]);
+  }
+  if (Array.isArray(rec.services)) {
+    for (const service of rec.services) {
+      if (!service || typeof service !== 'object') continue;
+      if ('image' in service) service.image = await persist(service.image);
+      if (Array.isArray(service.units)) {
+        for (const unit of service.units) if (unit && typeof unit === 'object' && 'image' in unit) unit.image = await persist(unit.image);
+      }
+    }
+  }
   if (Array.isArray(rec.gallery)) {
     if (rec.gallery.length > MAX_PHOTOS) throw badRequest(`Add up to ${MAX_PHOTOS} photos per listing.`);
     rec.gallery = await Promise.all(rec.gallery.map(persist));

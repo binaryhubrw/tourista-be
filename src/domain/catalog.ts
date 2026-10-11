@@ -5,7 +5,7 @@ export const INTERESTS = ['Nature', 'Culture', 'Adventure', 'Food', 'Wildlife', 
 export const BUSINESS_CATEGORIES = ['Tour Guides', 'Restaurants', 'Handcrafts', 'Local Products', 'Accommodation', 'Transportation', 'Community Tourism'] as const;
 export const BADGES = ['Eco-certified', 'Community-owned', 'Women-led', 'Plastic-free', 'Solar-powered'] as const;
 export const PROPERTY_TYPES = ['Hotel', 'Lodge', 'Guesthouse', 'House', 'Apartment'] as const;
-export const OFFERING_GROUPS = ['room', 'wellness', 'food', 'activity'] as const;
+export const OFFERING_GROUPS = ['room', 'wellness', 'food', 'activity', 'vehicle'] as const;
 export const EXPERIENCE_TYPES = ['Traditional Dance', 'Food', 'Crafts', 'Coffee & Tea', 'Village Life', 'Historical Site', 'Cultural Tour', 'Adventure', 'Wildlife'] as const;
 
 export interface ListingKind {
@@ -30,6 +30,13 @@ export const LISTING_KINDS: ListingKind[] = [
   { id: 'Community tourism', category: 'Community Tourism' },
   { id: 'Wellness', category: 'Community Tourism' },
 ];
+
+/** Registration plates of a vehicle hire, from the richest field available. */
+export function vehiclePlates(service: { plateNumber?: string; plates?: string[]; units?: { plate: string }[] }) {
+  if (service.units?.length) return service.units.map((u) => u.plate).filter(Boolean);
+  if (service.plates?.length) return service.plates;
+  return service.plateNumber?.trim() ? [service.plateNumber.trim()] : [];
+}
 
 export function listingKindOf(b: { listingKind?: string; propertyType?: string; category: string }) {
   if (b.listingKind) return b.listingKind;

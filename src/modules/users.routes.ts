@@ -100,5 +100,7 @@ usersRouter.delete('/:id/', requireRole('admin'), ah(async (req, res) => {
   if (!doc) throw notFound('User');
   // Listings stay; they simply lose their owner link (the FE tolerates a missing ownerId).
   await Business.updateMany({ ownerId: req.params.id }, { $unset: { ownerId: 1 } });
+  // An owner's staff cannot work without them.
+  await User.deleteMany({ role: 'staff', ownerId: req.params.id });
   res.status(204).end();
 }));

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { addDaysIso, guidedVisitPrice, nightsBetween, pricingMode, quote } from '../src/domain/pricing.js';
-import { bookingLines, occupiedUntil, remaining, requestWindow } from '../src/domain/availability.js';
+import { assignVehiclePlates, bookingLines, occupiedUntil, remaining, requestWindow } from '../src/domain/availability.js';
+import { minDue, remainingDue, subscriptionFee } from '../src/domain/lifecycle.js';
 import { looksLikePan, mobileNetwork, maskBank, payoutErrors } from '../src/domain/payout.js';
 
 const room = { id: 'r1', unit: 'per night', priceRwf: 50_000, available: 2 } as any;
@@ -59,11 +60,14 @@ describe('availability', () => {
     expect(occupiedUntil({ date: '2030-01-10' }, { unit: 'per person' })).toBe('2030-01-11');
   });
 
-  it('only counts Confirmed bookings and sums overlapping units', () => {
-    const pending = confirmed({ status: 'Pending' });
-    const canceled = confirmed({ status: 'Canceled' });
+  it('holds stock for any booking that is not released, and sums overlapping units', () => {
     const one = confirmed({ endDate: '2030-01-11', nights: 1 });
-    expect(remaining(room, [pending, canceled], '2030-01-10', '2030-01-11')).toBe(2);
+    for (const status of ['Canceled', 'Declined', 'Expired', 'Refunded']) {
+      expect(remaining(room, [confirmed({ status })], '2030-01-10', '2030-01-11')).toBe(2);
+    }
+    for (const status of ['Pending', 'AwaitingPayment', 'PaymentReview', 'Confirmed', 'RefundPending']) {
+      expect(remaining(room, [confirmed({ status })], '2030-01-10', '2030-01-11')).toBe(1);
+    }
     expect(remaining(room, [one, one], '2030-01-10', '2030-01-11')).toBe(0);
   });
 
@@ -103,5 +107,42 @@ describe('payout helpers', () => {
   it('validates payout accounts', () => {
     expect(payoutErrors({ bankAccount: '4001234567890123', mtnNumber: '0788123456', airtelNumber: '0733123456' })).toEqual({});
     expect(Object.keys(payoutErrors({ bankAccount: '123', mtnNumber: '0733123456', airtelNumber: '0788123456' }))).toHaveLength(3);
+  });
+});
+
+describe('lifecycle rules', () => {
+  it('requires 30% up front and takes a 10% subscription fee', () => {
+    expect(minDue(100_000)).toBe(30_000);
+    expect(minDue(1)).toBe(1);
+    expect(subscriptionFee(250_000)).toBe(25_000);
+  });
+
+  it('tracks what is still due across several transfers', () => {
+    const payment = { transfers: [{ amountRwf: 30_000 }, { amountRwf: 20_000 }] } as any;
+    expect(remainingDue({ totalRwf: 100_000, payment })).toBe(50_000);
+    expect(remainingDue({ totalRwf: 50_000, payment })).toBe(0);
+    expect(remainingDue({ totalRwf: 100_000, payment: undefined })).toBe(100_000);
+  });
+});
+
+describe('vehicle plates', () => {
+  const car = { id: 'corolla', name: 'Corolla', description: '', priceRwf: 50_000, unit: 'per day', available: 3, plates: ['RAD 1 A', 'RAD 2 A', 'RAD 3 A'] } as any;
+  const hire = (plates: string[], status = 'Confirmed') => ({
+    status, date: '2030-01-10', endDate: '2030-01-12', nights: 3, totalRwf: 0,
+    lines: [{ serviceId: 'corolla', serviceName: 'Corolla', units: plates.length, unitPriceRwf: 1, lineTotalRwf: 1, plateNumbers: plates }],
+  }) as any;
+
+  it('assigns the first free plates and skips ones already out', () => {
+    expect(assignVehiclePlates(car, 2, [], '2030-01-10', '2030-01-13')).toEqual(['RAD 1 A', 'RAD 2 A']);
+    expect(assignVehiclePlates(car, 2, [hire(['RAD 1 A'])], '2030-01-11', '2030-01-12')).toEqual(['RAD 2 A', 'RAD 3 A']);
+  });
+
+  it('frees plates after the hire ends or is released', () => {
+    expect(assignVehiclePlates(car, 1, [hire(['RAD 1 A'])], '2030-01-13', '2030-01-14')).toEqual(['RAD 1 A']);
+    expect(assignVehiclePlates(car, 1, [hire(['RAD 1 A'], 'Canceled')], '2030-01-10', '2030-01-11')).toEqual(['RAD 1 A']);
+  });
+
+  it('returns fewer plates than asked when the fleet is exhausted', () => {
+    expect(assignVehiclePlates(car, 3, [hire(['RAD 1 A', 'RAD 2 A'])], '2030-01-10', '2030-01-11')).toEqual(['RAD 3 A']);
   });
 });

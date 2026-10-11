@@ -96,7 +96,11 @@ if present) so no download is needed; otherwise it downloads a mongod on first r
 | Businesses | `GET /businesses/?owner=&category=&locationId=` · `GET /businesses/:id/` · `GET /businesses/:id/payout/` · owner/admin: `POST`, `PATCH /:id/` · admin: `POST /businesses/bulk/` |
 | Reviews | `GET /reviews/?targetId=&userId=` · `POST /reviews/` · `DELETE /reviews/:id/` |
 | Itineraries | `GET,POST /itineraries/` · `GET,PUT,DELETE /itineraries/:id/` |
-| Bookings | `GET /bookings/` (role-scoped) · `GET /bookings/availability/` (public, no PII) · `GET /bookings/:id/` · `POST /bookings/` · `POST /bookings/:id/pay/` · `PATCH /bookings/:id/` `{status:"Canceled"}` |
+| Bookings | `GET /bookings/` (role-scoped) · `GET /bookings/availability/` (public, no PII) · `GET /bookings/:id/` · `POST /bookings/` · `POST /bookings/:id/decision/` (host approve/decline) · `POST /bookings/:id/pay/` (guest transfer proof) · `POST /bookings/:id/confirm-payment/` (host) · `PATCH /bookings/:id/` `{status:"Canceled"}` |
+| Refunds | `GET,POST /refunds/` · `GET /refunds/:id/` · `POST /refunds/:id/approve\|reject/` (admin) · `POST /refunds/:id/complete/` (host) · `POST /refunds/:id/cancel/` (traveller) |
+| Staff | `GET,POST /staff/` · `PATCH,DELETE /staff/:id/` (business owner; admin with `ownerId`) |
+| Notifications | `GET /notifications/` · `GET /notifications/unread-count/` · `POST /notifications/read-all/` · `PATCH /notifications/:id/read/` |
+| Fees (admin) | `GET /fees/` |
 | Favorites | `GET,POST /favorites/` · `DELETE /favorites/:itemId/` |
 | Search | `GET /search/?q=&scope=all\|accommodations\|restaurants\|businesses` |
 | Analytics (admin) | `GET /analytics/overview/` · `PUT /analytics/baseline/` |
@@ -150,11 +154,37 @@ password; `STORAGE_DRIVER=s3`.
 - Search results are cached in memory for up to 45 s per instance and invalidated on writes in that instance, so
   with several instances a new listing can take up to 45 s to appear in search.
 
+## Booking lifecycle
+
+```
+Pending ──host approves──▶ AwaitingPayment ──guest sends ≥30%──▶ PaymentReview ──host confirms──▶ Confirmed
+   │                              │ (2 h window)                                                        │
+   └─host declines─▶ Declined     └─not paid in time─▶ Expired                  guest asks refund ─▶ RefundPending
+                                                                                        │ admin approves, host returns money
+                                                                                        ▼
+                                                                                    Refunded
+```
+
+- **Stock:** every booking except `Canceled`, `Declined`, `Expired` and `Refunded` holds inventory, including
+  `Pending`. Availability is checked inside a transaction when the request is created.
+- **Payments are off-platform transfers.** The guest sends money to the host's bank/MoMo number (read from the
+  owner's profile, never from the client) and uploads a screenshot; the **host** confirms receipt. Admins do not
+  approve payments. A 10% subscription fee (`/fees/`) is recorded on each paid booking.
+- **Cancel:** unpaid bookings can be canceled by the guest, host or admin. A paid booking must go through a refund.
+- **Refunds:** `admin_review → returning → completed` (or `rejected` / `canceled`); a rejected or withdrawn
+  request returns the booking to `Confirmed`.
+- **Staff** are users with role `staff`, tied to an owner and to assigned branches (one active manager per branch).
+  They approve bookings, confirm payments, complete refunds and edit offerings on assigned branches only.
+- **Vehicles** are services with `group: "vehicle"` and a list of registration plates; the server assigns free
+  plates per hire (`lines[].plateNumbers`) and refuses when the fleet is out.
+- **Notifications** are created by the server on booking, payment, refund, review and staff events.
+- Admins can still record a desk payment by sending `payment` with `POST /bookings/`; that confirms instantly.
+
 ## Behaviour worth knowing
 
 - **Prices are server-authoritative.** Line prices and totals are recomputed from the catalogue with the
   same functions as the frontend (`src/domain/pricing.ts`). A stale client total returns 409.
-- **Inventory** is consumed only by `Confirmed` bookings. The availability check and insert run in a
+- **Inventory** is held by every booking that is not canceled, declined, expired or refunded. The availability check and insert run in a
   transaction that also bumps `bookingSeq` on the business document, so two guests paying for the last
   room cannot both succeed (covered by a test).
 - **Ratings** are recomputed from the reviews actually stored when a review is added or removed.

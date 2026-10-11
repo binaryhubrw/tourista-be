@@ -11,6 +11,8 @@ import { toDto, toDtos } from '../utils/dto.js';
 import { authenticate } from '../middleware/auth.js';
 import { body, query } from '../middleware/validate.js';
 import { invalidateSearchIndex } from './search.service.js';
+import { hostRecipients } from './hosts.js';
+import { adminIds, notify } from './notifications.service.js';
 
 const targetModels = { location: Location, experience: Experience, business: Business } as const;
 
@@ -70,6 +72,12 @@ reviewsRouter.post('/', authenticate, ah(async (req, res) => {
     await session.endSession();
   }
   invalidateSearchIndex();
+  // Tell the host side of a reviewed business, and admins.
+  const business = input.targetType === 'business' ? await Business.findById(input.targetId, { ownerId: 1 }).lean<any>() : null;
+  const hosts = business ? await hostRecipients({ ownerId: business.ownerId, businessId: input.targetId }) : [];
+  const text = `${review.userName} rated ${review.targetName} ${review.rating} star${review.rating === 1 ? '' : 's'}.`;
+  await notify(hosts, { kind: 'review', title: 'New review on your branch', body: text, path: '/reviews' }, req.user!.id);
+  await notify(await adminIds(), { kind: 'review', title: 'New review', body: text, path: '/reviews' }, req.user!.id);
   res.status(201).json(toDto(review));
 }));
 

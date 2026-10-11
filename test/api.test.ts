@@ -180,51 +180,51 @@ describe('bookings', () => {
     expect(pending.body.id).toMatch(/^bk-[a-z0-9]{8}$/);
   });
 
-  it('confirms with payment, sets payout from the owner and refunds on cancel', async () => {
-    const date = futureDate(70);
-    const create = await http.post('/bookings/', {
-      ...customer, targetId: biz, targetType: 'business', businessId: biz, serviceId: roomId, units: 1, date, endDate: futureDate(71), people: 2,
-      payment: mtn(), }, 'tourist');
-    expect(create.status).toBe(201);
-    expect(create.body.status).toBe('Confirmed');
-    expect(create.body.payment).toMatchObject({ method: 'mtn', status: 'Paid', sentTo: '+250 788 123 401', sentToLabel: 'Virunga Hospitality · MTN Mobile Money' });
-    expect(create.body.payment).not.toHaveProperty('providerRef');
-    expect(create.body.payment.amountRwf).toBe(create.body.totalRwf);
+  it('rejects tourist payments on create and confirms admin desk payments', async () => {
+    const base = { ...customer, targetId: biz, targetType: 'business', businessId: biz, serviceId: roomId, units: 1, date: futureDate(70), endDate: futureDate(71), people: 2 };
+    const tourist = await http.post('/bookings/', { ...base, payment: mtn() }, 'tourist');
+    expect(tourist.status).toBe(422);
+    expect(tourist.body.message).toMatch(/approve/);
 
-    // Public availability shows it without any PII.
+    const admin = await http.post('/bookings/', { ...base, userId: 'user-tourist-1', payment: { ...mtn(), account: '+250 788 000 111' } }, 'admin');
+    expect(admin.status).toBe(201);
+    expect(admin.body.status).toBe('Confirmed');
+    expect(admin.body.ownerId).toBe('user-business-1');
+    expect(admin.body.payment).toMatchObject({ method: 'mtn', status: 'Paid', ledger: 'approved', sentTo: '+250 788 123 401', sentToLabel: 'Virunga Hospitality · MTN Mobile Money' });
+    expect(admin.body.payment).not.toHaveProperty('providerRef');
+    expect(admin.body.payment.amountRwf).toBe(admin.body.totalRwf);
+    expect(admin.body.payment.feeRwf).toBe(Math.round(admin.body.totalRwf * 0.1));
+
+    // Public availability shows held stock without any PII.
     const avail = await http.get(`/bookings/availability/?businessId=${biz}`);
-    const hit = avail.body.find((x: any) => x.id === create.body.id);
+    const hit = avail.body.find((x: any) => x.id === admin.body.id);
     expect(hit).toBeTruthy();
-    expect(hit).not.toHaveProperty('customerEmail');
-    expect(hit).not.toHaveProperty('userId');
-    expect(hit).not.toHaveProperty('payment');
+    for (const k of ['customerEmail', 'userId', 'payment', 'notes']) expect(hit).not.toHaveProperty(k);
 
     // Another tourist cannot see it; the listing owner can.
-    expect((await http.get(`/bookings/${create.body.id}/`, 'other')).status).toBe(404);
-    expect((await http.get(`/bookings/${create.body.id}/`, 'owner')).status).toBe(200);
+    expect((await http.get(`/bookings/${admin.body.id}/`, 'other')).status).toBe(404);
+    expect((await http.get(`/bookings/${admin.body.id}/`, 'owner')).status).toBe(200);
 
-    const canceled = await http.patch(`/bookings/${create.body.id}/`, { status: 'Canceled' }, 'tourist');
-    expect(canceled.status).toBe(200);
-    expect(canceled.body).toMatchObject({ status: 'Canceled' });
-    expect(canceled.body.payment.status).toBe('Refunded');
-    expect((await http.patch(`/bookings/${create.body.id}/`, { status: 'Canceled' }, 'tourist')).status).toBe(409);
-    expect((await http.patch(`/bookings/${create.body.id}/`, { status: 'Confirmed' }, 'tourist')).status).toBe(422);
+    // A paid booking cannot simply be canceled: it goes through a refund.
+    const cancel = await http.patch(`/bookings/${admin.body.id}/`, { status: 'Canceled' }, 'tourist');
+    expect(cancel.status).toBe(409);
+    expect(cancel.body.message).toMatch(/refund/i);
+    expect((await http.patch(`/bookings/${admin.body.id}/`, { status: 'Confirmed' }, 'tourist')).status).toBe(422);
   });
-
-  it('pays an existing Pending booking later', async () => {
+  it('cancels an unpaid booking, releasing its stock, and is idempotent', async () => {
     const created = await http.post('/bookings/', {
       ...customer, targetId: biz, targetType: 'business', businessId: biz, serviceId: roomId, units: 1, date: futureDate(100), endDate: futureDate(101), people: 1 }, 'tourist');
     expect(created.status).toBe(201);
-    expect((await http.post(`/bookings/${created.body.id}/pay/`, mtn(), 'other')).status).toBe(404);
-    expect((await http.post(`/bookings/${created.body.id}/pay/`, { method: 'card', account: '4242 4242 4242 4242' }, 'tourist')).status).toBe(400);
-    const wrongAmount = await http.post(`/bookings/${created.body.id}/pay/`, mtn(1), 'tourist');
-    expect(wrongAmount.status).toBe(409);
-    const paid = await http.post(`/bookings/${created.body.id}/pay/`, mtn(created.body.totalRwf), 'tourist');
-    expect(paid.status).toBe(200);
-    expect(paid.body.status).toBe('Confirmed');
-    expect((await http.post(`/bookings/${created.body.id}/pay/`, mtn(), 'tourist')).status).toBe(409);
+    // A Pending request cannot be paid before the host approves it.
+    const early = await http.post(`/bookings/${created.body.id}/pay/`, mtn(), 'tourist');
+    expect(early.status).toBe(409);
+    expect(early.body.message).toMatch(/host must approve/i);
+    const canceled = await http.patch(`/bookings/${created.body.id}/`, { status: 'Canceled' }, 'tourist');
+    expect(canceled.body.status).toBe('Canceled');
+    expect((await http.patch(`/bookings/${created.body.id}/`, { status: 'Canceled' }, 'tourist')).status).toBe(200);
+    const avail = await http.get(`/bookings/availability/?businessId=${biz}`);
+    expect(avail.body.some((x: any) => x.id === created.body.id)).toBe(false);
   });
-
   it('scopes booking lists by role', async () => {
     const mine = await http.get('/bookings/', 'tourist');
     expect(mine.body.every((b: any) => b.userId === 'user-tourist-1')).toBe(true);
@@ -246,17 +246,18 @@ describe('bookings', () => {
     expect(created.status).toBe(201);
     const id = created.body.id;
     const date = futureDate(200);
+    // Pending requests hold stock too, so eight simultaneous requests for the last room: one wins.
     const attempts = await Promise.all(Array.from({ length: 8 }, (_, i) =>
       http.post('/bookings/', {
         ...customer, customerName: `Guest ${i}`, targetId: id, targetType: 'business', businessId: id, serviceId: 'only-room', units: 1,
-        date, endDate: futureDate(201), people: 1, payment: mtn(),
+        date, endDate: futureDate(201), people: 1,
       }, i % 2 ? 'tourist' : 'other')));
     const ok = attempts.filter((r) => r.status === 201);
     const rejected = attempts.filter((r) => r.status === 409);
     expect(ok).toHaveLength(1);
     expect(rejected).toHaveLength(7);
     expect(rejected[0].body.message).toMatch(/already booked|left for those dates/);
-    const stored = await mongoose.connection.db!.collection('bookings').countDocuments({ businessId: id, status: 'Confirmed' });
+    const stored = await mongoose.connection.db!.collection('bookings').countDocuments({ businessId: id });
     expect(stored).toBe(1);
   });
 });
@@ -365,16 +366,16 @@ describe('robustness', () => {
 
 describe('frontend compatibility', () => {
   it('serves PII-free availability to anonymous callers and to tourists using scope=business', async () => {
+    const released = ['Canceled', 'Declined', 'Expired', 'Refunded'];
     for (const res of [await request(app).get('/api/bookings/?scope=business'), await http.get('/bookings/?scope=business', 'tourist'), await request(app).get('/api/bookings/').set('Authorization', 'Bearer stale')]) {
       expect(res.status).toBe(200);
       expect(res.body.length).toBeGreaterThan(0);
-      expect(res.body.every((b: any) => b.status === 'Confirmed' && !('customerEmail' in b) && !('userId' in b) && !('payment' in b))).toBe(true);
+      expect(res.body.every((b: any) => !released.includes(b.status) && !('customerEmail' in b) && !('userId' in b) && !('payment' in b))).toBe(true);
     }
     // Without the hint a tourist still gets only their own bookings.
     const own = await http.get('/bookings/', 'tourist');
     expect(own.body.every((b: any) => b.userId === 'user-tourist-1')).toBe(true);
   });
-
   it('honours userId and businessIds filters for admins', async () => {
     const mine = await http.get('/bookings/?userId=user-tourist-1', 'admin');
     expect(mine.body.length).toBeGreaterThan(0);
@@ -390,12 +391,15 @@ describe('frontend compatibility', () => {
       userId: 'u-lisa', customerName: 'Lisa Hartmann', customerEmail: 'lisa@example.com', customerPhone: '',
       targetId: biz.id, targetType: 'business', businessId: biz.id, serviceId: room.id, units: 1,
       date: futureDate(300), endDate: futureDate(301), people: 1, notes: 'Booked by an admin',
-      payment: { method: 'airtel', status: 'Paid', account: '+250 788 000 111', reference: 'AIR-X', amountRwf: room.priceRwf, paidAt: new Date().toISOString() },
     };
-    const res = await http.post('/bookings/', body, 'admin');
+    const res = await http.post('/bookings/', {
+      ...body,
+      payment: { method: 'airtel', status: 'Paid', account: '+250 788 000 111', reference: 'AIR-X', amountRwf: room.priceRwf, paidAt: new Date().toISOString() },
+    }, 'admin');
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ userId: 'u-lisa', status: 'Confirmed' });
-    // A tourist cannot skip the phone number or pay with a mismatched network.
-    expect((await http.post('/bookings/', { ...body, userId: undefined, date: futureDate(310), endDate: futureDate(311) }, 'tourist')).status).toBe(400);
+    // A tourist cannot skip the phone number.
+    const noPhone = await http.post('/bookings/', { ...body, userId: undefined, date: futureDate(310), endDate: futureDate(311) }, 'tourist');
+    expect(noPhone.status).toBe(400);
   });
 });

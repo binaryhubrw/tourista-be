@@ -12,7 +12,8 @@ import { authenticate, signToken } from '../middleware/auth.js';
 import { body } from '../middleware/validate.js';
 import { persistImages } from '../middleware/persistImages.js';
 import { airtelNumber, bankAccount, email, mtnNumber, nonEmpty, phone, trimmed } from './common.js';
-import { serializeUser } from './users.service.js';
+import { serializeUser, withStaffOwner } from './users.service.js';
+import { adminIds, notify } from './notifications.service.js';
 import { sendMail } from '../providers/mail.js';
 
 const password = z.string({ error: 'Enter a password.' }).min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters for your password.`).max(200);
@@ -90,6 +91,9 @@ authRouter.post('/register/', limiter, ah(async (req, res) => {
     joinedAt: new Date().toISOString(),
   });
   const user = serializeUser(doc.toObject(), { id: doc._id, role: doc.role });
+  if (user.role === 'business_owner') {
+    await notify(await adminIds(), { kind: 'staff', title: 'New business owner joined', body: `${user.businessName || user.name} created an account.`, path: '/users' });
+  }
   res.status(201).json({ token: signToken(user), user });
 }));
 
@@ -98,13 +102,14 @@ authRouter.post('/login/', limiter, ah(async (req, res) => {
   const doc = await User.findOne({ email: addr }).lean<any>();
   const ok = await bcrypt.compare(plain, doc?.passwordHash ?? DUMMY_HASH);
   if (!doc || !ok) throw new HttpError(401, BAD_LOGIN);
-  const user = serializeUser(doc, { id: doc._id, role: doc.role });
+  if (doc.role === 'staff' && doc.active === false) throw forbidden('This staff account is deactivated. Ask the owner to activate it.');
+  const user = await withStaffOwner(serializeUser(doc, { id: doc._id, role: doc.role }));
   res.json({ token: signToken(user), user });
 }));
 
 authRouter.get('/me/', authenticate, ah(async (req, res) => {
   const doc = await User.findById(req.user!.id).lean();
-  res.json(serializeUser(doc, req.user));
+  res.json(await withStaffOwner(serializeUser(doc, req.user)));
 }));
 
 authRouter.patch('/me/', authenticate, persistImages, ah(async (req, res) => {
@@ -120,10 +125,12 @@ authRouter.patch('/me/', authenticate, persistImages, ah(async (req, res) => {
   }
   if (problems.length) throw badRequest(problems[0].message, problems);
   const { preferences: prefs, ...fields } = input;
+  // Staff may change how they appear, but payout accounts and the trading name belong to the owner.
+  if (req.user!.role === 'staff') for (const k of ['businessName', 'bankAccount', 'mtnNumber', 'airtelNumber'] as const) delete (fields as any)[k];
   const set: Record<string, unknown> = { ...fields };
   for (const [k, v] of Object.entries(prefs ?? {})) set[`preferences.${k}`] = v;
   const doc = await User.findByIdAndUpdate(req.user!.id, { $set: set }, { new: true }).lean();
-  res.json(serializeUser(doc, req.user));
+  res.json(await withStaffOwner(serializeUser(doc, req.user)));
 }));
 
 authRouter.post('/password-reset/', limiter, ah(async (req, res) => {

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { config, BCRYPT_COST, isProd } from '../../config.js';
 import { connectDb, disconnectDb } from '../connect.js';
-import { Baseline, BASELINE_ID, Booking, Business, Experience, Itinerary, Location, Review, User } from '../../models/index.js';
+import { Baseline, BASELINE_ID, Booking, Business, Experience, Itinerary, Location, Refund, Review, User } from '../../models/index.js';
 import { generateBookings } from './bookings.js';
 import type { Business as BusinessT, Experience as ExperienceT, User as UserT } from '../../domain/types.js';
 
@@ -36,7 +36,7 @@ export async function seed({ reset = false, uri }: { reset?: boolean; uri?: stri
   const experiences = load<ExperienceT[]>('experiences');
 
   // Mongo creates indexes lazily; make sure they exist before data lands.
-  await Promise.all([User, Location, Experience, Business, Review, Itinerary, Booking].map((m) => m.syncIndexes()));
+  await Promise.all([User, Location, Experience, Business, Review, Itinerary, Booking, Refund].map((m) => m.syncIndexes()));
 
   await upsert(User, users.map((u) => ({ ...u, email: u.email.toLowerCase(), passwordHash: hash })));
   await upsert(Location, load('locations'));
@@ -44,7 +44,9 @@ export async function seed({ reset = false, uri }: { reset?: boolean; uri?: stri
   await upsert(Business, businesses.map((b) => ({ ...b, bookingSeq: 0 })));
   await upsert(Review, load('reviews'));
   await upsert(Itinerary, load('itineraries'));
-  await upsert(Booking, generateBookings(users, businesses, experiences));
+  const generated = generateBookings(users, businesses, experiences);
+  await upsert(Booking, generated.bookings);
+  await upsert(Refund, generated.refunds.map((r) => ({ ...r, createdAt: r.steps[0].at })));
   await Baseline.replaceOne({ _id: BASELINE_ID }, { _id: BASELINE_ID, data: load('baseline') }, { upsert: true });
 
   return {

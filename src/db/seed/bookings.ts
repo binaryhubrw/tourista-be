@@ -1,6 +1,7 @@
 // Port of the frontend's deterministic demo-bookings generator (src/data/bookings.ts).
 // Generated relative to today so dashboards always show a year of activity.
-import type { Booking, BookingStatus, Business, Experience, Payment, PaymentMethod, Service, User } from '../../domain/types.js';
+import type { Booking, BookingStatus, Business, Experience, Payment, PaymentMethod, Refund, Service, User } from '../../domain/types.js';
+import { minDue, subscriptionFee } from '../../domain/lifecycle.js';
 import { pricingMode } from '../../domain/pricing.js';
 import { todayIso } from '../../utils/dates.js';
 
@@ -19,10 +20,11 @@ interface Target {
   name: string;
   type: Booking['targetType'];
   businessId?: string;
+  ownerId?: string;
   services: Service[];
 }
 
-export function generateBookings(users: User[], businesses: Business[], experiences: Experience[]): Booking[] {
+export function generateBookings(users: User[], businesses: Business[], experiences: Experience[]): { bookings: Booking[]; refunds: Refund[] } {
   const rand = mulberry32(20261009);
   const pick = <T,>(list: T[]) => list[Math.floor(rand() * list.length)];
   const between = (min: number, max: number) => min + Math.floor(rand() * (max - min + 1));
@@ -31,7 +33,7 @@ export function generateBookings(users: User[], businesses: Business[], experien
   const addDays = (d: Date, n: number) => new Date(d.getTime() + n * DAY);
   const iso = (d: Date) => d.toISOString().slice(0, 10);
 
-  const listing = (b: Business): Target => ({ id: b.id, name: b.name, type: 'business', businessId: b.id, services: b.services });
+  const listing = (b: Business): Target => ({ id: b.id, name: b.name, type: 'business', businessId: b.id, ownerId: b.ownerId, services: b.services });
   const ownerListings = businesses.filter((b) => b.ownerId === 'user-business-1' && b.services.length).map(listing);
   const otherTargets: Target[] = [
     ...businesses.filter((b) => b.ownerId !== 'user-business-1' && b.services.length).map(listing),
@@ -46,11 +48,15 @@ export function generateBookings(users: User[], businesses: Business[], experien
   const methods: PaymentMethod[] = ['mtn', 'mtn', 'airtel', 'card', 'card'];
   let seq = 1000;
 
-  const payment = (method: PaymentMethod, amountRwf: number, paidAt: Date, status: Payment['status']): Payment => ({
-    method, status, amountRwf, paidAt: paidAt.toISOString(),
-    account: method === 'card' ? `Visa •••• ${between(1000, 9999)}` : `+250 7${method === 'mtn' ? pick(['8', '9']) : pick(['2', '3'])}${between(0, 9)} *** ${between(100, 999)}`,
-    reference: `${method === 'card' ? 'CRD' : method === 'mtn' ? 'MOMO' : 'AIR'}-${(seq * 7919).toString(36).toUpperCase()}`,
-  });
+  const payment = (method: PaymentMethod, amountRwf: number, paidAt: Date, status: Payment['status']): Payment => {
+    const account = method === 'card' ? `Bank •••• ${between(1000, 9999)}` : `+250 7${method === 'mtn' ? pick(['8', '9']) : pick(['2', '3'])}${between(0, 9)} *** ${between(100, 999)}`;
+    const reference = `${method === 'card' ? 'CRD' : method === 'mtn' ? 'MOMO' : 'AIR'}-${(seq * 7919).toString(36).toUpperCase()}`;
+    return {
+      id: `pay-${seq}`, method, status, ledger: status === 'Refunded' ? 'refunded' : 'approved', amountRwf, paidAt: paidAt.toISOString(),
+      account, senderAccount: account, senderName: account, reference, minDueRwf: minDue(amountRwf), feeRwf: subscriptionFee(amountRwf),
+      transfers: [{ id: `trn-${seq}`, method, senderName: account, senderAccount: account, amountRwf, reference, paidAt: paidAt.toISOString(), status: 'Paid' }],
+    };
+  };
 
   function make(target: Target, customer: User, createdDaysAgo: number): Booking {
     const rooms = target.services.filter((s) => pricingMode(s.unit) === 'stay');
@@ -81,9 +87,12 @@ export function generateBookings(users: User[], businesses: Business[], experien
 
     const past = start < today;
     const roll = rand();
-    const status: BookingStatus = past ? (roll < 0.86 ? 'Confirmed' : 'Canceled') : roll < 0.2 ? 'Pending' : roll < 0.92 ? 'Confirmed' : 'Canceled';
+    let status: BookingStatus = past ? (roll < 0.86 ? 'Confirmed' : 'Canceled') : roll < 0.2 ? 'Pending' : roll < 0.92 ? 'Confirmed' : 'Canceled';
     const method = pick(methods);
     seq += 1;
+    // A canceled booking that was paid is a refunded one.
+    const refunded = status === 'Canceled' && rand() < 0.6;
+    if (refunded) status = 'Refunded';
 
     return {
       id: `bk-${seq}`,
@@ -95,6 +104,7 @@ export function generateBookings(users: User[], businesses: Business[], experien
       targetType: target.type,
       targetName: target.name,
       businessId: target.businessId,
+      ownerId: target.ownerId,
       serviceId: service.id,
       serviceName: service.name,
       lines: [{ serviceId: service.id, serviceName: service.name, units, unitPriceRwf: service.priceRwf, lineTotalRwf: total }],
@@ -107,7 +117,8 @@ export function generateBookings(users: User[], businesses: Business[], experien
       totalRwf: total,
       status,
       payment: status === 'Confirmed' ? payment(method, total, created, 'Paid')
-        : status === 'Canceled' && rand() < 0.6 ? payment(method, total, created, 'Refunded') : undefined,
+        : status === 'Refunded' ? payment(method, total, created, 'Refunded') : undefined,
+      ...(status === 'Pending' ? {} : {}),
       createdAt: created.toISOString(),
     };
   }
@@ -118,5 +129,18 @@ export function generateBookings(users: User[], businesses: Business[], experien
   for (let i = 0; i < 6; i++) out.push(make(pick(ownerListings), pick(guests), between(30, 59)));
   for (let i = 0; i < 14; i++) out.push(make(i % 4 === 0 ? pick(ownerListings) : pick(otherTargets), tourist, between(2, 330)));
   for (let i = 0; i < 70; i++) out.push(make(pick(otherTargets), pick(guests), between(0, 360)));
-  return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const bookings = out.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const refunds: Refund[] = bookings.filter((b) => b.status === 'Refunded' && b.payment).map((b) => {
+    const at = b.payment!.paidAt;
+    return {
+      id: `rfd-${b.id}`, paymentId: b.payment!.id ?? b.id, bookingId: b.id, amountRwf: b.payment!.amountRwf, status: 'completed' as const,
+      reason: 'Plans changed.', receiveMethod: b.payment!.method, receiveAccount: b.payment!.account, receiveName: b.customerName,
+      steps: [
+        { at, by: b.customerName, role: 'tourist' as const, action: 'Requested a refund', note: 'Plans changed.' },
+        { at, by: 'Tourista Admin', role: 'admin' as const, action: 'Admin approved the refund. The host will return the money.' },
+        { at, by: 'Host', role: 'business_owner' as const, action: 'Host sent the refund to the traveller.' },
+      ],
+    };
+  });
+  return { bookings, refunds };
 }

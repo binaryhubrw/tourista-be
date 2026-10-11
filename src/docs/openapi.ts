@@ -8,6 +8,8 @@ import { reviewInput } from '../modules/reviews.routes.js';
 import { itineraryInput } from '../modules/itineraries.routes.js';
 import { favoriteInput } from '../modules/favorites.routes.js';
 import { bookingInput, paymentInput } from '../modules/bookings.service.js';
+import { staffInput } from '../modules/staff.routes.js';
+import { refundCompleteInput, refundRequestInput } from '../modules/refunds.routes.js';
 
 type Json = Record<string, any>;
 
@@ -32,7 +34,9 @@ const schemas: Json = {
     errors: arr(obj({ path: str(), message: str() })),
   }, ['message', 'status']),
   User: obj({
-    id: str(), name: str(), email: str({ format: 'email' }), role: str({ enum: ['tourist', 'business_owner', 'admin'] }),
+    id: str(), name: str(), email: str({ format: 'email' }), role: str({ enum: ['tourist', 'business_owner', 'admin', 'staff'] }),
+    ownerId: str({ description: 'Staff only: the business owner they work for.' }),
+    assignedListingIds: arr(str()),
     avatar: str(), phone: str(), country: str(), joinedAt: str(), businessName: str(),
     bankAccount: str({ description: 'Only returned to the user themself and admins.' }),
     mtnNumber: str({ description: 'Only returned to the user themself and admins.' }),
@@ -58,8 +62,12 @@ const schemas: Json = {
     id: str(), name: str(), description: str(), priceRwf: { type: 'integer' },
     unit: str({ description: '`per night` (stay), `per day` (rental), `per person`, anything else is per unit.', example: 'per night' }),
     capacity: { type: 'integer' }, available: { type: 'integer', description: 'Omitted means unlimited.' },
-    bedType: str(), amenities: arr(str()), group: str({ enum: ['room', 'wellness', 'food', 'activity'] }), category: str(),
+    bedType: str(), amenities: arr(str()), group: str({ enum: ['room', 'wellness', 'food', 'activity', 'vehicle'] }), category: str(),
+    brand: str({ description: 'Vehicles: Toyota, Nissan…' }), image: str({ description: 'Vehicles: photo of this car.' }),
+    plateNumber: str(), plates: arr(str()),
+    units: arr(obj({ plate: str(), image: str(), level: str() }, ['plate'])),
   }, ['id', 'name', 'priceRwf', 'unit']),
+  VehicleUnit: obj({ plate: str(), image: str(), level: str() }, ['plate']),
   Business: obj({
     id: str({ example: 'virunga-hillside-ecolodge' }), name: str(), ownerName: str(), ownerId: str(),
     category: str({ enum: ['Tour Guides', 'Restaurants', 'Handcrafts', 'Local Products', 'Accommodation', 'Transportation', 'Community Tourism'] }),
@@ -81,24 +89,60 @@ const schemas: Json = {
     id: str(), userId: str(), title: str(), description: str(), startDate: isoDate, endDate: isoDate,
     stops: arr(ref('ItineraryStop')), createdAt: instant, updatedAt: instant,
   }),
-  BookingLine: obj({ serviceId: str(), serviceName: str(), units: { type: 'integer' }, unitPriceRwf: { type: 'integer' }, lineTotalRwf: { type: 'integer' } }),
+  BookingLine: obj({ serviceId: str(), serviceName: str(), units: { type: 'integer' }, unitPriceRwf: { type: 'integer' }, lineTotalRwf: { type: 'integer' }, plateNumbers: arr(str()) }),
+  PaymentTransfer: obj({
+    id: str(), method: str({ enum: ['card', 'mtn', 'airtel'] }), senderName: str(), senderAccount: str(), amountRwf: { type: 'integer' },
+    screenshot: str(), sentTo: str(), sentToLabel: str(), reference: str(), paidAt: instant, status: str({ enum: ['Pending', 'Paid'] }),
+  }),
   Payment: obj({
-    method: str({ enum: ['card', 'mtn', 'airtel'] }), status: str({ enum: ['Paid', 'Refunded'] }),
-    account: str({ description: 'Masked card or mobile number of the guest.' }), reference: str(), amountRwf: { type: 'integer' },
-    paidAt: instant, sentTo: str({ description: 'Masked merchant account the money was sent to.' }), sentToLabel: str(),
+    id: str(), method: str({ enum: ['card', 'mtn', 'airtel'] }), status: str({ enum: ['Pending', 'Paid', 'Refunded'] }),
+    ledger: str({ enum: ['pending', 'approved', 'partial', 'refund_requested', 'refunded'] }),
+    account: str(), senderAccount: str(), senderName: str(), screenshot: str(), reference: str(),
+    amountRwf: { type: 'integer', description: 'Sum of all transfers sent so far.' },
+    minDueRwf: { type: 'integer', description: '30% of the booking total, due with the first transfer.' },
+    feeRwf: { type: 'integer', description: 'Platform subscription fee (10% of the total).' },
+    paidAt: instant, sentTo: str({ description: 'Masked host account, set by the server.' }), sentToLabel: str(),
+    transfers: arr(ref('PaymentTransfer')),
   }),
   Booking: obj({
     id: str({ example: 'bk-k3j9x2ab' }), userId: str(), customerName: str(), customerEmail: str(), customerPhone: str(),
-    targetId: str(), targetType: str({ enum: ['experience', 'business', 'location'] }), targetName: str(), businessId: str(),
+    targetId: str(), targetType: str({ enum: ['experience', 'business', 'location'] }), targetName: str(), businessId: str(), ownerId: str(),
     serviceId: str(), serviceName: str(), lines: arr(ref('BookingLine')), date: isoDate, endDate: isoDate,
     nights: { type: 'integer' }, units: { type: 'integer' }, unitPriceRwf: { type: 'integer' }, people: { type: 'integer' },
-    totalRwf: { type: 'integer' }, payment: ref('Payment'), status: str({ enum: ['Pending', 'Confirmed', 'Canceled'] }),
-    notes: str(), createdAt: instant,
+    totalRwf: { type: 'integer' }, payment: ref('Payment'),
+    status: str({
+      enum: ['Pending', 'Declined', 'OwnerApproved', 'AwaitingPayment', 'PaymentReview', 'Confirmed', 'Canceled', 'Expired', 'RefundPending', 'Refunded'],
+      description: 'Pending = waiting for the host; AwaitingPayment = approved, guest has a two-hour window; PaymentReview = transfer sent, host to confirm. Everything except Canceled, Declined, Expired and Refunded holds stock.',
+    }),
+    paymentDueAt: instant, declinedReason: str(), notes: str(), createdAt: instant,
+  }),
+  RefundStep: obj({ at: instant, by: str(), role: str(), action: str(), note: str(), proof: str() }),
+  Refund: obj({
+    id: str(), paymentId: str(), bookingId: str(), amountRwf: { type: 'integer' },
+    status: str({ enum: ['requested', 'owner_review', 'admin_review', 'returning', 'completed', 'rejected', 'canceled'] }),
+    reason: str(), travelerProof: str(), ownerReturnProof: str(), travelerReceivedProof: str(),
+    receiveMethod: str({ enum: ['card', 'mtn', 'airtel'] }), receiveAccount: str(), receiveName: str(),
+    returnTransfer: obj({ method: str(), senderName: str(), senderAccount: str(), senderAddress: str(), proof: str(), sentTo: str(), sentToName: str(), sentAt: instant, reference: str() }),
+    steps: arr(ref('RefundStep')), createdAt: instant,
+  }),
+  StaffMember: obj({
+    id: str(), name: str(), email: str(), role: str({ enum: ['staff'] }), phone: str(), title: str({ example: 'Manager' }),
+    ownerId: str(), assignedListingIds: arr(str()), active: { type: 'boolean' }, joinedAt: instant,
+  }),
+  AppNotification: obj({
+    id: str(), userId: str(), kind: str({ enum: ['booking', 'payment', 'refund', 'review', 'staff', 'system'] }),
+    title: str(), body: str(), href: str({ example: '/business-dashboard/bookings/bk-k3j9x2ab' }), createdAt: instant, readAt: instant,
+  }),
+  FeeLedger: obj({
+    rate: num({ example: 0.1 }),
+    rows: arr(obj({ id: str(), bookingId: str(), listing: str(), guest: str(), paidAt: instant, bookingTotal: num(), paid: num(), feeRwf: num(), method: str(), refunded: { type: 'boolean' } })),
+    wallet: arr(obj({ id: str(), kind: str({ enum: ['in', 'out'] }), title: str(), subtitle: str(), amount: num(), at: instant, bookingId: str() })),
+    totals: obj({ earnedRwf: num(), reversedRwf: num(), balanceRwf: num() }),
   }),
   AvailabilityEntry: obj({
     id: str(), targetId: str(), targetType: str(), businessId: str(), serviceId: str(), serviceName: str(),
     lines: arr(ref('BookingLine')), date: isoDate, endDate: isoDate, nights: { type: 'integer' }, units: { type: 'integer' },
-    status: str({ enum: ['Confirmed'] }),
+    status: str({ enum: ['Pending', 'AwaitingPayment', 'PaymentReview', 'Confirmed', 'RefundPending', 'OwnerApproved'] }),
   }),
   Favorite: obj({
     id: str({ example: 'fav-kigali' }), itemId: str(), itemType: str({ enum: ['location', 'experience', 'business'] }),
@@ -132,6 +176,9 @@ const schemas: Json = {
   FavoriteInput: fromZod(favoriteInput),
   BookingInput: fromZod(bookingInput),
   PaymentInput: fromZod(paymentInput),
+  StaffInput: fromZod(staffInput),
+  RefundRequestInput: fromZod(refundRequestInput),
+  RefundCompleteInput: fromZod(refundCompleteInput),
 };
 
 // ------------------------------------------------------------- helpers ----
@@ -242,7 +289,7 @@ const paths: Json = {
   '/businesses/{id}/': {
     get: op({ tag: 'Businesses', summary: 'Get a business', params: [idParam()], ok: [200, ref('Business')], errs: [404] }),
     patch: op({ tag: 'Businesses', summary: 'Update a listing', description: 'Partial. `rating`, `reviewCount`, `createdAt` and `id` cannot be changed; only admins may change `ownerId`.',
-      auth: true, roles: 'the listing owner, or admin', params: [idParam()], body: ref('BusinessInput'), ok: [200, ref('Business')], errs: [400, 401, 403, 404, 422] }),
+      auth: true, roles: 'the listing owner, or admin; staff on assigned branches may update `services` (offerings and vehicle fleet) only', params: [idParam()], body: ref('BusinessInput'), ok: [200, ref('Business')], errs: [400, 401, 403, 404, 409, 422] }),
   },
   '/businesses/{id}/payout/': { get: op({ tag: 'Businesses', summary: 'Where a guest’s payment goes',
     description: 'Bank accounts are masked; mobile-money numbers are shown in full so guests can see the merchant.',
@@ -272,7 +319,7 @@ const paths: Json = {
       params: [qParam('userId', 'Filter by customer (admin, business owner)'), qParam('businessIds', 'Comma-separated business ids'), qParam('scope', 'Pass `business` to get the public availability list (tourists)')],
       ok: [200, { oneOf: [list('Booking'), list('AvailabilityEntry')] }], errs: [] }),
     post: op({ tag: 'Bookings', summary: 'Create a booking',
-      description: 'Prices and totals are recomputed on the server. Without `payment` the booking is `Pending`; with it the booking is paid and `Confirmed` (availability is checked inside a transaction). A stale `totalRwf` returns 409.',
+      description: 'Starts a request: the booking is `Pending` until the host approves it, and already holds stock (checked inside a transaction). Prices and totals are recomputed on the server (a stale `totalRwf` returns 409). Vehicle hires get registration plates assigned (`lines[].plateNumbers`). Admins may attach a `payment` for desk payments, which confirms the booking immediately; tourists pay after approval via `/pay/`.',
       auth: true, roles: 'tourist (own), admin (any customer)', body: ref('BookingInput'), ok: [201, ref('Booking')], errs: [400, 401, 403, 404, 409, 422] }),
   },
   '/bookings/availability/': { get: op({ tag: 'Bookings', summary: 'Confirmed bookings for availability calendars',
@@ -286,9 +333,16 @@ const paths: Json = {
       auth: true, roles: 'the guest, the listing owner (decline), or admin', params: [idParam()], body: obj({ status: str({ enum: ['Canceled'] }) }, ['status']),
       ok: [200, ref('Booking')], errs: [401, 404, 409, 422] }),
   },
-  '/bookings/{id}/pay/': { post: op({ tag: 'Bookings', summary: 'Pay a pending booking',
-    description: 'Sends only the masked account. Amount and recipient are set by the server.',
+  '/bookings/{id}/pay/': { post: op({ tag: 'Bookings', summary: 'Record a transfer to the host',
+    description: 'Used after the host approves (`AwaitingPayment`) and for any later balance. The first transfer must be at least 30% of the total and arrive inside the two-hour window; omit `amountRwf` to pay everything that is left. The recipient account is always taken from the host’s profile, and a screenshot (https URL or base64 image) can be attached. The booking moves to `PaymentReview` until the host confirms.',
     auth: true, roles: 'the guest, or admin', params: [idParam()], body: ref('PaymentInput'), ok: [200, ref('Booking')], errs: [400, 401, 403, 404, 409, 422] }) },
+  '/bookings/{id}/decision/': { post: op({ tag: 'Bookings', summary: 'Host approves or declines a request',
+    description: '`approve: true` moves the booking to `AwaitingPayment` and opens a two-hour payment window. `approve: false` declines it with an optional `reason` and releases the stock. The guest is notified.',
+    auth: true, roles: 'the listing owner, or staff assigned to that listing', params: [idParam()],
+    body: obj({ approve: { type: 'boolean' }, reason: str() }, ['approve']), ok: [200, ref('Booking')], errs: [400, 401, 403, 404, 409] }) },
+  '/bookings/{id}/confirm-payment/': { post: op({ tag: 'Bookings', summary: 'Host confirms the transfer arrived',
+    description: 'Marks every pending transfer paid, sets the payment to `Paid` / ledger `approved`, and the booking to `Confirmed`. Admins do not approve payments.',
+    auth: true, roles: 'the listing owner, or staff assigned to that listing', params: [idParam()], ok: [200, ref('Booking')], errs: [401, 403, 404, 409, 422] }) },
 
   '/favorites/': {
     get: op({ tag: 'Favorites', summary: 'My favorites, newest first', auth: true, ok: [200, list('Favorite')], errs: [401] }),
@@ -299,6 +353,46 @@ const paths: Json = {
   '/search/': { get: op({ tag: 'Search', summary: 'Search businesses that have availability today',
     params: [qParam('q', 'Search text'), qParam('scope', 'Narrow the results', str({ enum: ['all', 'accommodations', 'restaurants', 'businesses'], default: 'all' }))],
     ok: [200, list('SearchResult')] }) },
+
+  '/refunds/': {
+    get: op({ tag: 'Refunds', summary: 'List refunds (scoped by role)', description: 'Travellers see their own, hosts see refunds on their listings (staff: assigned branches), admins see all.',
+      auth: true, ok: [200, list('Refund')], errs: [401] }),
+    post: op({ tag: 'Refunds', summary: 'Ask for a refund', description: 'Only for a booking whose payment is `Paid`, and only one open request per booking. The booking moves to `RefundPending` and admins are notified.',
+      auth: true, roles: 'tourist (own booking)', body: ref('RefundRequestInput'), ok: [201, ref('Refund')], errs: [400, 401, 403, 404, 409, 422] }),
+  },
+  '/refunds/{id}/': { get: op({ tag: 'Refunds', summary: 'Get a refund', description: 'Returns 404 when the caller may not see it.',
+    auth: true, params: [idParam()], ok: [200, ref('Refund')], errs: [401, 404] }) },
+  '/refunds/{id}/approve/': { post: op({ tag: 'Refunds', summary: 'Admin approves a refund', description: 'Moves the refund to `returning`: the host is asked to send the money back.',
+    auth: true, roles: 'admin', params: [idParam()], body: obj({ note: str() }), ok: [200, ref('Refund')], errs: [401, 403, 404, 409] }) },
+  '/refunds/{id}/reject/': { post: op({ tag: 'Refunds', summary: 'Admin rejects a refund', description: 'The booking returns to `Confirmed`.',
+    auth: true, roles: 'admin', params: [idParam()], body: obj({ note: str() }), ok: [200, ref('Refund')], errs: [401, 403, 404, 409] }) },
+  '/refunds/{id}/complete/': { post: op({ tag: 'Refunds', summary: 'Host records the refund transfer', description: 'Only after admin approval. The booking becomes `Refunded` and the payment `Refunded`.',
+    auth: true, roles: 'the listing owner, or assigned staff', params: [idParam()], body: ref('RefundCompleteInput'), ok: [200, ref('Refund')], errs: [400, 401, 403, 404, 409, 422] }) },
+  '/refunds/{id}/cancel/': { post: op({ tag: 'Refunds', summary: 'Traveller withdraws a refund request', description: 'Only while it is still waiting for admin. The booking returns to `Confirmed`.',
+    auth: true, roles: 'tourist (own)', params: [idParam()], ok: [200, ref('Refund')], errs: [401, 403, 404, 409] }) },
+
+  '/staff/': {
+    get: op({ tag: 'Staff', summary: 'List my team', description: 'Admins may pass `ownerId`.', auth: true, roles: 'business_owner, admin',
+      params: [qParam('ownerId', 'Admin only: whose team')], ok: [200, list('StaffMember')], errs: [401, 403] }),
+    post: op({ tag: 'Staff', summary: 'Add a staff manager',
+      description: 'Staff log in with `POST /auth/login/` like everyone else, and act only on their assigned branches. One active manager per branch. Admins must also send `ownerId`.',
+      auth: true, roles: 'business_owner, admin', body: ref('StaffInput'), ok: [201, ref('StaffMember')], errs: [400, 401, 403, 409, 422] }),
+  },
+  '/staff/{id}/': {
+    patch: op({ tag: 'Staff', summary: 'Update or (de)activate a staff member', description: 'A deactivated account cannot log in and its existing sessions stop working immediately.',
+      auth: true, roles: 'business_owner (own team), admin', params: [idParam()], body: ref('StaffInput'), ok: [200, ref('StaffMember')], errs: [400, 401, 403, 404, 409, 422] }),
+    delete: op({ tag: 'Staff', summary: 'Remove a staff member', auth: true, roles: 'business_owner (own team), admin', params: [idParam()], ok: [204, null], errs: [401, 403, 404] }),
+  },
+
+  '/notifications/': { get: op({ tag: 'Notifications', summary: 'My notifications, newest first',
+    description: 'Created by the server when bookings, payments, refunds, reviews and staff changes happen. `href` is already prefixed for the recipient’s dashboard.',
+    auth: true, ok: [200, list('AppNotification')], errs: [401] }) },
+  '/notifications/unread-count/': { get: op({ tag: 'Notifications', summary: 'Unread count', auth: true, ok: [200, obj({ count: { type: 'integer' } }, ['count'])], errs: [401] }) },
+  '/notifications/read-all/': { post: op({ tag: 'Notifications', summary: 'Mark everything read', auth: true, ok: [204, null], errs: [401] }) },
+  '/notifications/{id}/read/': { patch: op({ tag: 'Notifications', summary: 'Mark one notification read', auth: true, params: [idParam()], ok: [200, ref('AppNotification')], errs: [401, 404] }) },
+
+  '/fees/': { get: op({ tag: 'Fees', summary: 'Platform subscription-fee ledger',
+    description: '10% of every paid booking comes in; completed refunds reverse the fee.', auth: true, roles: 'admin', ok: [200, ref('FeeLedger')], errs: [401, 403] }) },
 
   '/analytics/overview/': { get: op({ tag: 'Analytics', summary: 'Platform statistics', auth: true, roles: 'admin', ok: [200, ref('TourismStatistics')], errs: [401, 403] }) },
   '/analytics/baseline/': { put: op({ tag: 'Analytics', summary: 'Edit national baseline figures', description: 'Merged into the stored baseline; send only what changes.',
@@ -327,7 +421,7 @@ export const openApiDocument = {
     ].join('\n'),
   },
   servers: [{ url: '/api', description: 'This server' }],
-  tags: ['System', 'Auth', 'Users', 'Locations', 'Experiences', 'Businesses', 'Reviews', 'Itineraries', 'Bookings', 'Favorites', 'Search', 'Analytics', 'Uploads'].map((name) => ({ name })),
+  tags: ['System', 'Auth', 'Users', 'Locations', 'Experiences', 'Businesses', 'Reviews', 'Itineraries', 'Bookings', 'Refunds', 'Staff', 'Notifications', 'Fees', 'Favorites', 'Search', 'Analytics', 'Uploads'].map((name) => ({ name })),
   components: {
     securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
     schemas,

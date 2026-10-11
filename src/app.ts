@@ -20,6 +20,10 @@ import { favoritesRouter } from './modules/favorites.routes.js';
 import { searchRouter } from './modules/search.routes.js';
 import { analyticsRouter } from './modules/analytics.routes.js';
 import { uploadsRouter } from './modules/uploads.routes.js';
+import { refundsRouter } from './modules/refunds.routes.js';
+import { staffRouter } from './modules/staff.routes.js';
+import { notificationsRouter } from './modules/notifications.routes.js';
+import { feesRouter } from './modules/fees.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import { openApiDocument } from './docs/openapi.js';
 
@@ -36,7 +40,7 @@ export function createApp() {
   }));
   app.use(cors({ origin: corsOrigins, credentials: false }));
   // Only routes that carry photos (base64 data URLs, swapped for stored URLs by persistImages) may be large.
-  const photoRoutes = ['/api/locations', '/api/businesses', '/api/experiences', '/api/users', '/api/auth/me'];
+  const photoRoutes = ['/api/locations', '/api/businesses', '/api/experiences', '/api/users', '/api/auth/me', '/api/bookings', '/api/refunds'];
   app.use(photoRoutes, express.json({ limit: '30mb' }));
   app.use(express.json({ limit: '256kb' }));
 
@@ -72,6 +76,10 @@ export function createApp() {
   api.use('/search', searchRouter);
   api.use('/analytics', analyticsRouter);
   api.use('/uploads', uploadsRouter);
+  api.use('/refunds', refundsRouter);
+  api.use('/staff', staffRouter);
+  api.use('/notifications', notificationsRouter);
+  api.use('/fees', feesRouter);
   app.use('/api', api);
 
   app.use(notFoundHandler);

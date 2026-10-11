@@ -7,6 +7,7 @@ import { authenticate, requireRole } from '../middleware/auth.js';
 import { body } from '../middleware/validate.js';
 import { todayIso } from '../utils/dates.js';
 import { INTERESTS } from '../domain/catalog.js';
+import { occupiesInventory } from '../domain/lifecycle.js';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -55,7 +56,7 @@ analyticsRouter.get('/overview/', ah(async (_req, res) => {
   });
   const live = new Map(months.map((m) => [m.key, { domestic: 0, international: 0 }]));
   for (const b of bookings) {
-    if (b.status === 'Canceled') continue;
+    if (!occupiesInventory(b.status)) continue;
     const bucket = live.get(String(b.date).slice(0, 7));
     if (!bucket) continue;
     if (countryOf.get(b.userId) === 'Rwanda') bucket.domestic += 1; else bucket.international += 1;
@@ -81,7 +82,7 @@ analyticsRouter.get('/overview/', ah(async (_req, res) => {
   const revenue = new Map<BusinessCategory, number>(base.economicImpact.revenueByCategory.map((r) => [r.category, r.revenueRwf]));
   let liveRevenue = 0;
   for (const b of bookings) {
-    if (b.payment?.status !== 'Paid' || b.status !== 'Confirmed') continue;
+    if (b.payment?.status !== 'Paid') continue;
     liveRevenue += b.totalRwf;
     const cat = b.businessId ? categoryOf.get(b.businessId) : undefined;
     if (cat) revenue.set(cat, (revenue.get(cat) ?? 0) + b.totalRwf);

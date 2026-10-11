@@ -1,4 +1,5 @@
 import { buildIndex, search, type SearchScope } from '../domain/search.js';
+import { RELEASED_STATUSES } from '../domain/lifecycle.js';
 import type { Business, Location } from '../domain/types.js';
 import { Booking, Business as BusinessModel, Location as LocationModel } from '../models/index.js';
 import { toDtos } from '../utils/dto.js';
@@ -16,7 +17,7 @@ async function load() {
   const [businesses, locations, bookings] = await Promise.all([
     BusinessModel.find().lean(),
     LocationModel.find().lean(),
-    Booking.find({ status: 'Confirmed', date: { $gte: '1970-01-01' } }, { status: 1, date: 1, endDate: 1, nights: 1, lines: 1, serviceId: 1, serviceName: 1, units: 1, unitPriceRwf: 1, totalRwf: 1 }).lean(),
+    Booking.find({ status: { $nin: RELEASED_STATUSES } }, { status: 1, date: 1, endDate: 1, nights: 1, lines: 1, serviceId: 1, serviceName: 1, units: 1, unitPriceRwf: 1, totalRwf: 1 }).lean(),
   ]);
   const locs = toDtos<Location>(locations);
   cache = {

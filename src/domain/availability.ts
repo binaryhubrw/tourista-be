@@ -1,6 +1,8 @@
 // Ported from the frontend (src/utils/availability.ts). Pure functions, no I/O.
 import type { Booking, BookingLine, Business, Service } from './types.js';
 import { addDaysIso, nightsBetween, pricingMode } from './pricing.js';
+import { occupiesInventory } from './lifecycle.js';
+import { vehiclePlates } from './catalog.js';
 
 type LineSource = Pick<Booking, 'lines' | 'serviceId' | 'serviceName' | 'units' | 'unitPriceRwf' | 'totalRwf'>;
 
@@ -27,10 +29,10 @@ const overlaps = (start: string, end: string, otherStart: string, otherEnd: stri
 
 export type AvailabilityBooking = Pick<Booking, 'status' | 'date' | 'endDate' | 'nights'> & LineSource;
 
-/** Units already confirmed for this service between start (inclusive) and end (exclusive). */
+/** Units already held (any booking that has not been canceled, declined, expired or refunded) for this service between start (inclusive) and end (exclusive). */
 export function reservedUnits(serviceId: string, bookings: AvailabilityBooking[], start: string, end: string, service?: Pick<Service, 'unit'>) {
   return bookings.reduce((sum, booking) => {
-    if (booking.status !== 'Confirmed') return sum;
+    if (!occupiesInventory(booking.status)) return sum;
     const line = bookingLines(booking).find((item) => item.serviceId === serviceId);
     if (!line) return sum;
     return overlaps(start, end, booking.date, occupiedUntil(booking, service)) ? sum + line.units : sum;
@@ -58,3 +60,26 @@ export const availableServices = (services: Service[], bookings: AvailabilityBoo
 
 export const hasAvailability = (business: Pick<Business, 'services'>, bookings: AvailabilityBooking[], today: string) =>
   availableServices(business.services, bookings, today).length > 0;
+
+/** Plates already assigned to overlapping bookings of this car type. */
+export function reservedPlates(serviceId: string, bookings: AvailabilityBooking[], start: string, end: string, service?: Pick<Service, 'unit'>) {
+  const taken: string[] = [];
+  for (const booking of bookings) {
+    if (!occupiesInventory(booking.status)) continue;
+    const line = bookingLines(booking).find((item) => item.serviceId === serviceId);
+    if (!line?.plateNumbers?.length) continue;
+    if (overlaps(start, end, booking.date, occupiedUntil(booking, service))) taken.push(...line.plateNumbers);
+  }
+  return taken;
+}
+
+/** Next free registration plates for a vehicle hire. */
+export function assignVehiclePlates(service: Service, count: number, bookings: AvailabilityBooking[], start: string, end: string) {
+  const fleet = vehiclePlates(service);
+  if (!fleet.length) return [];
+  const taken = new Set(reservedPlates(service.id, bookings, start, end, service));
+  const reserved = reservedUnits(service.id, bookings, start, end, service);
+  const anonymous = Math.max(0, reserved - taken.size);
+  const free = fleet.filter((plate) => !taken.has(plate));
+  return free.slice(anonymous, anonymous + Math.max(0, count));
+}
