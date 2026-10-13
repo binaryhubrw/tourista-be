@@ -41,7 +41,7 @@ export async function seed({ reset = false, uri }: { reset?: boolean; uri?: stri
   await upsert(User, users.map((u) => ({ ...u, email: u.email.toLowerCase(), passwordHash: hash })));
   await upsert(Location, load('locations'));
   await upsert(Experience, experiences);
-  await upsert(Business, businesses.map((b) => ({ ...b, bookingSeq: 0 })));
+  await upsert(Business, businesses.map((b) => ({ ...b, bookingSeq: 0, approvalStatus: 'approved' })));
   await upsert(Review, load('reviews'));
   await upsert(Itinerary, load('itineraries'));
   const generated = generateBookings(users, businesses, experiences);

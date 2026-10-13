@@ -19,8 +19,16 @@ const schema = z.object({
   STORAGE_DRIVER: z.enum(['disk', 's3']).default('disk'),
   UPLOAD_DIR: z.string().default('./uploads'),
   PUBLIC_MEDIA_URL: z.string().default('http://localhost:8000/uploads'),
+  /** Either a full URL (`smtp://user:pass@host:587`) or the discrete MAIL_* variables below. */
   SMTP_URL: z.string().optional(),
+  MAIL_HOST: z.string().optional(),
+  MAIL_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  MAIL_USER: z.string().optional(),
+  MAIL_PASS: z.string().optional(),
+  /** Implicit TLS (port 465). Defaults to true when the port is 465, otherwise STARTTLS is used. */
+  MAIL_SECURE: z.enum(['true', 'false']).optional().transform((v) => (v === undefined ? undefined : v === 'true')),
   MAIL_FROM: z.string().default('Tourista Rwanda <no-reply@tourista.rw>'),
+  MAIL_REPLY_TO: z.string().optional(),
   TRUST_PROXY: z.coerce.number().int().min(0).default(1),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).optional(),
   RATE_LIMIT_PER_MIN: z.coerce.number().int().min(1).default(300),

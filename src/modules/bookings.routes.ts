@@ -8,6 +8,8 @@ import { authenticate, optionalAuth, requireRole } from '../middleware/auth.js';
 import { persistImages } from '../middleware/persistImages.js';
 import { body, query } from '../middleware/validate.js';
 import { hostListingIds, isHostRole } from './hosts.js';
+import { emailInvoice, invoiceAttachment } from './emails.service.js';
+import { conflict, tooMany } from '../utils/errors.js';
 import {
   bookingDto, bookingInput, cancelBooking, canSee, confirmPayment, createBooking, decideBooking, expireStaleBookings,
   paymentInput, submitPayment,
@@ -80,6 +82,32 @@ bookingsRouter.use(authenticate);
 
 bookingsRouter.post('/', requireRole('tourist', 'admin'), ah(async (req, res) => {
   res.status(201).json(await createBooking(body(req, bookingInput), req.user!));
+}));
+
+/** Invoice as a PDF: the guest, the host side of the booking, and admins. Available once any payment exists. */
+bookingsRouter.get('/:id/invoice/', ah(async (req, res) => {
+  const doc = await Booking.findById(req.params.id).lean<any>();
+  if (!doc || !(await canSee(doc, req.user!))) throw notFound('Booking');
+  if (!doc.payment) throw conflict('There is no payment on this booking yet, so there is no invoice.');
+  const pdf = await invoiceAttachment(doc);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${pdf.filename}"`);
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.send(pdf.content);
+}));
+
+const lastInvoiceEmail = new Map<string, number>();
+
+/** Emails the current invoice to the guest again. Limited to once a minute per booking. */
+bookingsRouter.post('/:id/invoice/send/', ah(async (req, res) => {
+  const doc = await Booking.findById(req.params.id).lean<any>();
+  if (!doc || !(await canSee(doc, req.user!))) throw notFound('Booking');
+  if (!doc.payment) throw conflict('There is no payment on this booking yet, so there is no invoice.');
+  const last = lastInvoiceEmail.get(doc._id) ?? 0;
+  if (Date.now() - last < 60_000) throw tooMany('An invoice was just sent. Check your inbox, or try again in a minute.');
+  lastInvoiceEmail.set(doc._id, Date.now());
+  await emailInvoice(doc);
+  res.status(202).json({ sentTo: doc.customerEmail });
 }));
 
 bookingsRouter.get('/:id/', ah(async (req, res) => {

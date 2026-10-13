@@ -39,7 +39,7 @@ analyticsRouter.get('/overview/', ah(async (_req, res) => {
   const base = await baseline();
   const [locations, businesses, bookings, users, itineraries, reviewCount, touristCount] = await Promise.all([
     Location.find({}, { name: 1, visitsLastYear: 1, interests: 1 }).lean<any[]>(),
-    Business.find({}, { category: 1, badges: 1 }).lean<any[]>(),
+    Business.find({}, { category: 1, badges: 1, approvalStatus: 1 }).lean<any[]>(),
     Booking.find({}, { userId: 1, date: 1, status: 1, totalRwf: 1, businessId: 1, payment: 1 }).lean<any[]>(),
     User.find({}, { country: 1 }).lean<any[]>(),
     Itinerary.find({}, { stops: 1 }).lean<any[]>(),
@@ -88,11 +88,15 @@ analyticsRouter.get('/overview/', ah(async (_req, res) => {
     if (cat) revenue.set(cat, (revenue.get(cat) ?? 0) + b.totalRwf);
   }
 
-  const stats: TourismStatistics = {
+  // Only published listings count towards platform totals; pending ones are reported separately.
+  const published = businesses.filter((b) => b.approvalStatus !== 'pending' && b.approvalStatus !== 'rejected');
+  const pendingBusinesses = businesses.length - published.length;
+  const stats: TourismStatistics & { pendingBusinesses: number } = {
+    pendingBusinesses,
     totals: {
       tourists: base.totals.tourists + touristCount,
       locations: locations.length,
-      businesses: businesses.length,
+      businesses: published.length,
       reviews: reviewCount,
       itineraries: base.totals.itineraries + itineraries.length,
       bookings: base.totals.bookings + bookings.length,
@@ -107,8 +111,8 @@ analyticsRouter.get('/overview/', ah(async (_req, res) => {
     economicImpact: {
       localRevenueRwf: base.economicImpact.localRevenueRwf + liveRevenue,
       jobsSupported: base.economicImpact.jobsSupported,
-      womenLedBusinesses: Math.max(base.economicImpact.womenLedBusinesses, businesses.filter((b) => b.badges?.includes('Women-led')).length),
-      communityProjects: Math.max(base.economicImpact.communityProjects, businesses.filter((b) => b.badges?.includes('Community-owned') || b.category === 'Community Tourism').length),
+      womenLedBusinesses: Math.max(base.economicImpact.womenLedBusinesses, published.filter((b) => b.badges?.includes('Women-led')).length),
+      communityProjects: Math.max(base.economicImpact.communityProjects, published.filter((b) => b.badges?.includes('Community-owned') || b.category === 'Community Tourism').length),
       revenueByCategory: [...revenue].map(([category, revenueRwf]) => ({ category, revenueRwf })).sort((a, b) => b.revenueRwf - a.revenueRwf),
     },
   };

@@ -24,6 +24,7 @@ import { refundsRouter } from './modules/refunds.routes.js';
 import { staffRouter } from './modules/staff.routes.js';
 import { notificationsRouter } from './modules/notifications.routes.js';
 import { feesRouter } from './modules/fees.routes.js';
+import { mailRouter } from './modules/mail.routes.js';
 import swaggerUi from 'swagger-ui-express';
 import { openApiDocument } from './docs/openapi.js';
 
@@ -80,6 +81,7 @@ export function createApp() {
   api.use('/staff', staffRouter);
   api.use('/notifications', notificationsRouter);
   api.use('/fees', feesRouter);
+  api.use('/mail', mailRouter);
   app.use('/api', api);
 
   app.use(notFoundHandler);

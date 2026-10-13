@@ -69,6 +69,7 @@ beforeAll(async () => {
   expect(created.status).toBe(201);
   hotelId = created.body.id;
   roomId = 'room-a';
+  expect((await http.post(`/businesses/${hotelId}/approve/`, {}, 'admin')).status).toBe(200);
 });
 
 afterAll(async () => {
@@ -258,6 +259,7 @@ describe('staff', () => {
       services: [{ id: 'annex-room', name: 'Annex Room', priceRwf: 40_000, unit: 'per night', available: 2, group: 'room' }],
     }, 'owner');
     branchB = second.body.id;
+    await http.post(`/businesses/${branchB}/approve/`, {}, 'admin');
 
     const staff = { name: 'Alice Mukamana', email: 'Alice.M@virunga.rw', password: 'staff1234', phone: '+250 788 221 002', assignedListingIds: [hotelId] };
     expect((await http.post('/staff/', staff, 'tourist')).status).toBe(403);
@@ -339,6 +341,7 @@ describe('vehicle fleets', () => {
     }, 'owner');
     expect(created.status).toBe(201);
     hireId = created.body.id;
+    await http.post(`/businesses/${hireId}/approve/`, {}, 'admin');
     expect(created.body.services[0]).toMatchObject({ group: 'vehicle', brand: 'Toyota' });
     expect(created.body.services[0].units.map((u: any) => u.plate)).toEqual(['RAD 451 A', 'RAD 452 A']);
 

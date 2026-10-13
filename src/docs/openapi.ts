@@ -75,6 +75,9 @@ const schemas: Json = {
     reviewCount: { type: 'integer' }, badges: arr(str()), phone: str(), email: str(), coordinates: ref('Coordinates'),
     services: arr(ref('Service')), priceLevel: { type: 'integer', enum: [1, 2, 3] }, listingKind: str(), propertyType: str(),
     roomTypes: arr(str()), ecoFeatures: arr(str()), cuisine: arr(str()), signatureDish: str(), createdAt: str(),
+    approvalStatus: str({ enum: ['pending', 'approved', 'rejected'], description: 'Owner-created listings are `pending` until an admin approves them. Only `approved` listings are visible to travellers.' }),
+    rejectionReason: str({ description: 'Why an admin rejected it. Shown to the owner.' }),
+    submittedAt: instant, reviewedAt: instant, reviewedBy: str(),
   }),
   Payout: obj({
     businessName: str(), bankAccount: str({ description: 'Masked, e.g. `4001 •••• 0123`.' }),
@@ -187,6 +190,7 @@ const json = (schema: Json) => ({ 'application/json': { schema } });
 const errorResponses: Record<string, string> = {
   400: 'Validation failed', 401: 'Not logged in or session expired', 403: 'Not allowed for this role', 404: 'Not found',
   409: 'Conflict (duplicate, sold out, or stale price)', 422: 'Rule violation (dates, ownership, missing payout account)',
+  429: 'Too many requests (rate limited)',
 };
 const errors = (...codes: number[]) =>
   Object.fromEntries(codes.map((c) => [String(c), { description: errorResponses[c], content: json(ref('Error')) }]));
@@ -280,17 +284,26 @@ const paths: Json = {
 
   '/businesses/': {
     get: op({ tag: 'Businesses', summary: 'List businesses',
-      params: [qParam('owner', 'Only listings owned by this user id'), qParam('category', 'Business category'), qParam('locationId', 'Location id')], ok: [200, list('Business')] }),
+      description: 'Travellers and anonymous callers see **approved** listings only. Owners also see their own pending and rejected listings, staff their assigned branches, and admins everything (use `approvalStatus=pending` for the review queue).',
+      params: [qParam('owner', 'Only listings owned by this user id'), qParam('category', 'Business category'), qParam('locationId', 'Location id'),
+        qParam('approvalStatus', 'Filter by approval state', str({ enum: ['pending', 'approved', 'rejected'] }))], ok: [200, list('Business')] }),
     post: op({ tag: 'Businesses', summary: 'Create a listing',
-      description: 'Owners always own what they create; admins may pass `ownerId`. Service ids are generated when missing.',
+      description: 'Owners always own what they create; admins may pass `ownerId`. A listing created by an owner starts `pending` and is hidden from travellers until an admin approves it (admin-created listings are approved at once). Admins are notified in the app and by email. Service ids are generated when missing.',
       auth: true, roles: 'business_owner, admin', body: ref('BusinessInput'), ok: [201, ref('Business')], errs: [400, 401, 403, 422] }),
   },
   '/businesses/bulk/': { post: op({ tag: 'Businesses', summary: 'Create many listings', auth: true, roles: 'admin', body: arr(ref('BusinessInput')), ok: [201, list('Business')], errs: [400, 401, 403, 422] }) },
   '/businesses/{id}/': {
-    get: op({ tag: 'Businesses', summary: 'Get a business', params: [idParam()], ok: [200, ref('Business')], errs: [404] }),
+    get: op({ tag: 'Businesses', summary: 'Get a business', description: 'Pending and rejected listings return 404 to everyone except the owner, assigned staff and admins.',
+      params: [idParam()], ok: [200, ref('Business')], errs: [404] }),
     patch: op({ tag: 'Businesses', summary: 'Update a listing', description: 'Partial. `rating`, `reviewCount`, `createdAt` and `id` cannot be changed; only admins may change `ownerId`.',
       auth: true, roles: 'the listing owner, or admin; staff on assigned branches may update `services` (offerings and vehicle fleet) only', params: [idParam()], body: ref('BusinessInput'), ok: [200, ref('Business')], errs: [400, 401, 403, 404, 409, 422] }),
   },
+  '/businesses/{id}/approve/': { post: op({ tag: 'Businesses', summary: 'Approve a listing',
+    description: 'Publishes a pending (or previously rejected) listing. The owner is notified in the app and by email.',
+    auth: true, roles: 'admin', params: [idParam()], ok: [200, ref('Business')], errs: [401, 403, 404, 409] }) },
+  '/businesses/{id}/reject/': { post: op({ tag: 'Businesses', summary: 'Reject or suspend a listing',
+    description: 'Hides the listing (a new submission, or one already live) and tells the owner why. Existing bookings are kept but no new ones can be made. When the owner edits a rejected listing it returns to `pending` automatically.',
+    auth: true, roles: 'admin', params: [idParam()], body: obj({ reason: str({ minLength: 5, maxLength: 500 }) }, ['reason']), ok: [200, ref('Business')], errs: [400, 401, 403, 404, 409] }) },
   '/businesses/{id}/payout/': { get: op({ tag: 'Businesses', summary: 'Where a guest’s payment goes',
     description: 'Bank accounts are masked; mobile-money numbers are shown in full so guests can see the merchant.',
     auth: true, params: [idParam()], ok: [200, ref('Payout')], errs: [401, 404] }) },
@@ -336,6 +349,14 @@ const paths: Json = {
   '/bookings/{id}/pay/': { post: op({ tag: 'Bookings', summary: 'Record a transfer to the host',
     description: 'Used after the host approves (`AwaitingPayment`) and for any later balance. The first transfer must be at least 30% of the total and arrive inside the two-hour window; omit `amountRwf` to pay everything that is left. The recipient account is always taken from the host’s profile, and a screenshot (https URL or base64 image) can be attached. The booking moves to `PaymentReview` until the host confirms.',
     auth: true, roles: 'the guest, or admin', params: [idParam()], body: ref('PaymentInput'), ok: [200, ref('Booking')], errs: [400, 401, 403, 404, 409, 422] }) },
+  '/bookings/{id}/invoice/': { get: op({ tag: 'Bookings', summary: 'Download the invoice (PDF)',
+    description: 'Available once the booking has a payment. The status line reads PAID, PARTIALLY PAID, PAYMENT PENDING CONFIRMATION or REFUNDED. The same PDF is attached to payment emails. Fetch it with the Authorization header and open the blob.',
+    auth: true, roles: 'the guest, the listing owner or assigned staff, admin', params: [idParam()],
+    ok: [200, { type: 'string', format: 'binary' }, 'application/pdf'], errs: [401, 404, 409] }) },
+  '/bookings/{id}/invoice/send/': { post: op({ tag: 'Bookings', summary: 'Email the invoice to the guest again',
+    description: 'Sends the current invoice to the booking’s guest email. Limited to once a minute per booking.',
+    auth: true, roles: 'the guest, the listing owner or assigned staff, admin', params: [idParam()],
+    ok: [202, obj({ sentTo: str() }, ['sentTo']), 'Queued'], errs: [401, 404, 409, 429] }) },
   '/bookings/{id}/decision/': { post: op({ tag: 'Bookings', summary: 'Host approves or declines a request',
     description: '`approve: true` moves the booking to `AwaitingPayment` and opens a two-hour payment window. `approve: false` declines it with an optional `reason` and releases the stock. The guest is notified.',
     auth: true, roles: 'the listing owner, or staff assigned to that listing', params: [idParam()],
@@ -391,6 +412,13 @@ const paths: Json = {
   '/notifications/read-all/': { post: op({ tag: 'Notifications', summary: 'Mark everything read', auth: true, ok: [204, null], errs: [401] }) },
   '/notifications/{id}/read/': { patch: op({ tag: 'Notifications', summary: 'Mark one notification read', auth: true, params: [idParam()], ok: [200, ref('AppNotification')], errs: [401, 404] }) },
 
+  '/mail/status/': { get: op({ tag: 'Mail', summary: 'Email configuration and delivery status',
+    description: 'Logs in to the SMTP server (sends nothing) and reports whether delivery works, plus sent / failed counters. Credentials are never returned.',
+    auth: true, roles: 'admin', ok: [200, obj({ mode: str({ enum: ['smtp', 'json'], description: 'json = not configured, messages are not delivered' }), transport: str(), from: str(), verified: { type: 'boolean', nullable: true }, queued: { type: 'integer' }, sent: { type: 'integer' }, failed: { type: 'integer' }, lastError: str(), lastSentAt: instant })], errs: [401, 403] }) },
+  '/mail/test/': { post: op({ tag: 'Mail', summary: 'Send a test email',
+    description: 'Sends a short message to `to` (default: the admin’s own address) and returns the delivery status.',
+    auth: true, roles: 'admin', body: obj({ to: str({ format: 'email' }) }), ok: [202, obj({ to: str() }), 'Sent'], errs: [400, 401, 403] }) },
+
   '/fees/': { get: op({ tag: 'Fees', summary: 'Platform subscription-fee ledger',
     description: '10% of every paid booking comes in; completed refunds reverse the fee.', auth: true, roles: 'admin', ok: [200, ref('FeeLedger')], errs: [401, 403] }) },
 
@@ -421,7 +449,7 @@ export const openApiDocument = {
     ].join('\n'),
   },
   servers: [{ url: '/api', description: 'This server' }],
-  tags: ['System', 'Auth', 'Users', 'Locations', 'Experiences', 'Businesses', 'Reviews', 'Itineraries', 'Bookings', 'Refunds', 'Staff', 'Notifications', 'Fees', 'Favorites', 'Search', 'Analytics', 'Uploads'].map((name) => ({ name })),
+  tags: ['System', 'Auth', 'Users', 'Locations', 'Experiences', 'Businesses', 'Reviews', 'Itineraries', 'Bookings', 'Refunds', 'Staff', 'Notifications', 'Fees', 'Mail', 'Favorites', 'Search', 'Analytics', 'Uploads'].map((name) => ({ name })),
   components: {
     securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' } },
     schemas,

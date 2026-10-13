@@ -79,7 +79,9 @@ if present) so no download is needed; otherwise it downloads a mongod on first r
 | `ALLOW_SIMULATED_PAYMENTS` | `false` | Must be `true` to run `simulated` in production |
 | `STORAGE_DRIVER` | `disk` | `s3` is a seam, not implemented |
 | `UPLOAD_DIR` / `PUBLIC_MEDIA_URL` | `./uploads` / `http://localhost:8000/uploads` | Photos are saved in `<project>/uploads` (resolved from the project root, created at startup, startup fails if it is not writable) and served at `/uploads` |
-| `SMTP_URL` / `MAIL_FROM` | empty | Without SMTP, emails are not sent (a warning is logged; bodies are logged only outside production) |
+| `MAIL_HOST` `MAIL_PORT` `MAIL_USER` `MAIL_PASS` `MAIL_SECURE` | – / `587` | SMTP login (Gmail: `smtp.gmail.com`, an App Password). Port 465 uses TLS; otherwise STARTTLS |
+| `SMTP_URL` | – | Alternative to the `MAIL_*` variables |
+| `MAIL_FROM` / `MAIL_REPLY_TO` | `Tourista Rwanda <no-reply@tourista.rw>` / – | Sender and reply-to. Gmail rewrites the sender to the login address |
 | `TRUST_PROXY` | `1` | Number of reverse proxies in front of the API (needed for correct client IPs / rate limits) |
 | `RATE_LIMIT_PER_MIN` | `300` | Per-IP limit across `/api`; `/auth/*` has its own stricter 10/min |
 | `LOG_LEVEL` | by `NODE_ENV` | `fatal`…`trace`, `silent` |
@@ -153,6 +155,42 @@ password; `STORAGE_DRIVER=s3`.
 - Back up MongoDB and `UPLOAD_DIR` together; booking `payment` records are the financial source of truth.
 - Search results are cached in memory for up to 45 s per instance and invalidated on writes in that instance, so
   with several instances a new listing can take up to 45 s to appear in search.
+
+## Listing approval
+
+A listing an owner creates is `pending` until an admin approves it. Admin-created and bulk-imported listings are
+approved immediately, and listings that existed before approvals count as approved.
+
+- **Hidden while pending or rejected:** from the public list, a direct `GET /businesses/:id/` (404), search,
+  bookings, reviews and the payout lookup. Owners see their own listings in any state, assigned staff see their
+  branches, admins see everything (`GET /businesses/?approvalStatus=pending` is the review queue).
+- **Admin:** `POST /businesses/:id/approve/` and `POST /businesses/:id/reject/ {reason}`. Rejecting also suspends a
+  live listing; existing bookings are kept but no new ones are accepted.
+- **Owner:** editing a rejected listing sends it back to `pending` automatically. Editing an approved one stays live.
+- **Notifications:** admins are told in the app and by email when a listing is submitted or resubmitted, and the
+  owner when it is approved or rejected (with the reason).
+
+## Email
+
+Every flow that needs it sends email, queued in the background with up to three attempts, so a mail problem
+never fails a request. Messages are branded HTML with a plain-text version; user-supplied text is escaped.
+
+| Event | Who gets it |
+|---|---|
+| Account created / password reset / password changed | the user (always) |
+| Admin creates a user · staff added, activated or deactivated | the person concerned |
+| Booking requested | guest (acknowledgement) and host/staff |
+| Host approves | guest: how to pay, host's accounts, the deadline |
+| Host declines · booking expires · last-chance reminder (30 min before) · cancellation | guest or host, as relevant |
+| **Payment proof submitted** | guest: receipt + **invoice PDF**; host/staff: details + **the screenshot attached** + invoice |
+| **Payment confirmed** | guest: **invoice PDF** (always); host copy |
+| Refund requested / approved / rejected / completed | guest, admins, host as relevant; completed includes the host's receipt and an updated invoice |
+| New review | the host |
+
+Guests can switch off informational booking emails (`preferences.bookingEmails`); invoices, payment receipts and
+security messages are always sent. `GET /bookings/:id/invoice/` downloads the PDF and
+`POST /bookings/:id/invoice/send/` emails it again. Admins can check the setup with `GET /mail/status/` and
+`POST /mail/test/`. Tests never use a real mail server.
 
 ## Booking lifecycle
 

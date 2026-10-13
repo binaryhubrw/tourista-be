@@ -1,7 +1,7 @@
 import type { ClientSession } from 'mongoose';
 import { z } from 'zod';
 import { inTransaction } from '../db/transaction.js';
-import { assignVehiclePlates, bookingLines, remaining, requestWindow, reservedPlates } from '../domain/availability.js';
+import { assignVehiclePlates, remaining, requestWindow, reservedPlates } from '../domain/availability.js';
 import { vehiclePlates } from '../domain/catalog.js';
 import {
   minDue, occupiesInventory, PAY_WINDOW_MS, paymentTransfers, RELEASED_STATUSES, remainingDue, subscriptionFee,
@@ -10,15 +10,20 @@ import { formatPayoutAccount, looksLikePan, methodLabel, payoutAccount } from '.
 import { guidedVisitPrice, pricingMode, quote } from '../domain/pricing.js';
 import type { Booking as BookingT, BookingLine, Payment, PaymentMethod, Service, UserRole } from '../domain/types.js';
 import { Booking, Business, Experience, Location, User } from '../models/index.js';
+import { rwf } from '../providers/emailTemplates.js';
 import { getPaymentProvider, paymentReference } from '../providers/payment.js';
-import { sendMail } from '../providers/mail.js';
 import { bookableFrom } from '../utils/dates.js';
 import { badRequest, conflict, forbidden, HttpError, notFound, unprocessable } from '../utils/errors.js';
 import { newBookingId, newId } from '../utils/ids.js';
 import { toDto } from '../utils/dto.js';
 import { email, isoDate, phone } from './common.js';
 import { hostListingIds, hostRecipients, isHostRole } from './hosts.js';
+import { isApproved } from './listingVisibility.js';
 import { adminIds, notify } from './notifications.service.js';
+import {
+  emailBookingApproved, emailBookingCanceled, emailBookingDeclined, emailBookingExpired, emailBookingRequested,
+  emailPaymentConfirmed, emailPaymentProof, emailPaymentReminder,
+} from './emails.service.js';
 import { invalidateSearchIndex } from './search.service.js';
 
 type Actor = { id: string; role: UserRole; name: string; ownerId?: string; assignedListingIds?: string[] };
@@ -78,7 +83,8 @@ interface Target {
 async function resolveTarget(type: BookingT['targetType'], id: string, session?: ClientSession): Promise<Target> {
   if (type === 'business') {
     const b = await Business.findById(id).session(session ?? null).lean<any>();
-    if (!b) throw notFound('Business');
+    // Listings that are pending or rejected cannot be booked.
+    if (!b || !isApproved(b)) throw notFound('Business');
     return { id: b._id, name: b.name, type, businessId: b._id, ownerId: b.ownerId, services: b.services ?? [] };
   }
   if (type === 'experience') {
@@ -238,34 +244,6 @@ async function instantPayment(target: Target, bookingId: string, totalRwf: numbe
   };
 }
 
-// --------------------------------------------------------------- emails ----
-
-async function wantsEmail(userId: string) {
-  const u = await User.findById(userId, { preferences: 1 }).lean<any>();
-  return u?.preferences?.bookingEmails !== false;
-}
-
-const rwf = (n: number) => `RWF ${new Intl.NumberFormat('en-US').format(n)}`;
-
-async function emailConfirmation(b: any) {
-  if (!(await wantsEmail(b.userId))) return;
-  const lines = bookingLines(b).map((l) => `  - ${l.serviceName} × ${l.units}: ${rwf(l.lineTotalRwf)}`).join('\n');
-  void sendMail({
-    to: b.customerEmail,
-    subject: `Booking confirmed: ${b.targetName} (${b._id.toUpperCase()})`,
-    text: `Hello ${b.customerName},\n\nYour booking is confirmed.\n\nReference: ${b._id.toUpperCase()}\n${b.targetName}\n${lines}\nDates: ${b.date}${b.endDate ? ` to ${b.endDate}` : ''}\nTotal: ${rwf(b.totalRwf)}\nPaid so far: ${rwf(paymentTransfers(b.payment).reduce((s: number, t: any) => s + t.amountRwf, 0))}\nSent to: ${b.payment?.sentToLabel ?? ''} ${b.payment?.sentTo ?? ''}\n\nThank you for travelling with Tourista Rwanda.`,
-  });
-}
-
-async function emailCancellation(b: any) {
-  if (!(await wantsEmail(b.userId))) return;
-  void sendMail({
-    to: b.customerEmail,
-    subject: `Booking canceled: ${b.targetName} (${b._id.toUpperCase()})`,
-    text: `Hello ${b.customerName},\n\nYour booking ${b._id.toUpperCase()} for ${b.targetName} on ${b.date} was canceled.\n`,
-  });
-}
-
 // ---------------------------------------------------------------- views ----
 
 /** API shape of a booking: internal payment fields are removed. */
@@ -299,18 +277,43 @@ async function hostBooking(id: string, actor: Actor) {
 export async function expireStaleBookings(now = new Date()) {
   const stale = await Booking.find(
     { status: 'AwaitingPayment', paymentDueAt: { $lt: now.toISOString() }, payment: { $exists: false } },
-    { _id: 1, userId: 1, targetName: 1 },
+    { _id: 1 },
   ).lean<any[]>();
   if (!stale.length) return 0;
   const res = await Booking.updateMany(
     { _id: { $in: stale.map((b) => b._id) }, status: 'AwaitingPayment', payment: { $exists: false } },
     { $set: { status: 'Expired' } },
   );
-  for (const b of stale) {
+  const expired = await Booking.find({ _id: { $in: stale.map((b) => b._id) }, status: 'Expired' }).lean<any[]>();
+  for (const b of expired) {
     await notify([b.userId], { kind: 'booking', title: 'Payment window closed', body: `The two-hour window to pay for ${b.targetName} has closed, so the booking expired.`, path: `/bookings/${b._id}` });
+    await emailBookingExpired(b);
   }
   invalidateSearchIndex();
   return res.modifiedCount;
+}
+
+/** "Last chance" nudge for approved bookings whose payment window closes within 30 minutes. */
+export async function sendPaymentReminders(now = new Date()) {
+  const soon = new Date(now.getTime() + 30 * 60_000).toISOString();
+  const due = await Booking.find(
+    { status: 'AwaitingPayment', payment: { $exists: false }, paymentReminderSentAt: { $exists: false }, paymentDueAt: { $gte: now.toISOString(), $lte: soon } },
+    { _id: 1 },
+  ).lean<any[]>();
+  let sent = 0;
+  for (const { _id } of due) {
+    // Claim the reminder atomically so several instances never send it twice.
+    const doc = await Booking.findOneAndUpdate(
+      { _id, status: 'AwaitingPayment', paymentReminderSentAt: { $exists: false } },
+      { $set: { paymentReminderSentAt: now.toISOString() } },
+      { new: true },
+    ).lean<any>();
+    if (!doc) continue;
+    sent += 1;
+    await notify([doc.userId], { kind: 'booking', title: 'Your payment window closes soon', body: `Pay for ${doc.targetName} before ${new Date(doc.paymentDueAt).toISOString().slice(11, 16)} UTC or the booking expires.`, path: `/bookings/${doc._id}` });
+    await emailPaymentReminder(doc);
+  }
+  return sent;
 }
 
 // ------------------------------------------------------------- commands ----
@@ -382,8 +385,9 @@ export async function createBooking(input: BookingInputT, actor: Actor) {
       return created.toObject();
     });
     invalidateSearchIndex();
-    if (instant) void emailConfirmation(doc);
+    if (instant) await emailPaymentConfirmed(doc);
     else {
+      await emailBookingRequested(doc);
       await notify(await hostRecipients(doc), {
         kind: 'booking', title: 'New booking request',
         body: `${doc.customerName} asked to book ${doc.targetName} from ${doc.date}${doc.endDate ? ` to ${doc.endDate}` : ''}. Approve or decline it.`,
@@ -411,6 +415,8 @@ export async function decideBooking(id: string, approve: boolean, reason: string
   await notify([doc.userId], approve
     ? { kind: 'booking', title: 'Host approved your booking', body: `${doc.targetName} approved your request. Pay at least ${new Intl.NumberFormat('en-US').format(minDue(doc.totalRwf))} RWF (30%) within two hours to confirm.`, path: `/bookings/${doc._id}` }
     : { kind: 'booking', title: 'Host declined your booking', body: `${doc.targetName} could not take your booking. ${doc.declinedReason}`, path: `/bookings/${doc._id}` });
+  if (approve) await emailBookingApproved(doc);
+  else await emailBookingDeclined(doc);
   return bookingDto(doc);
 }
 
@@ -486,6 +492,7 @@ export async function submitPayment(id: string, input: PaymentInput, actor: Acto
     path: `/payments/${doc._id}`,
   });
   await notify(await adminIds(), { kind: 'payment', title: 'Payment waiting for review', body: `A guest sent proof for ${doc.targetName}.`, path: '/payments' });
+  await emailPaymentProof(doc);
   return bookingDto(doc);
 }
 
@@ -518,7 +525,7 @@ export async function confirmPayment(id: string, actor: Actor) {
     body: `${doc.targetName} confirmed your payment of ${rwf(doc.payment.amountRwf)}.${remainingDue(doc) > 0 ? ` ${rwf(remainingDue(doc))} is still due.` : ' Your booking is confirmed.'}`,
     path: `/bookings/${doc._id}`,
   });
-  void emailConfirmation(doc);
+  await emailPaymentConfirmed(doc);
   return bookingDto(doc);
 }
 
@@ -546,7 +553,7 @@ export async function cancelBooking(id: string, actor: Actor) {
     body: `${guestCanceled ? doc.customerName : doc.targetName} canceled the booking for ${doc.targetName} on ${doc.date}.`,
     path: `/bookings/${doc._id}`,
   }, actor.id);
-  void emailCancellation(doc);
+  await emailBookingCanceled(doc, guestCanceled);
   return bookingDto(doc);
 }
 

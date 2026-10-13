@@ -12,7 +12,7 @@ import { body } from '../middleware/validate.js';
 import { persistImages } from '../middleware/persistImages.js';
 import { bulk, email, nonEmpty, phone, trimmed } from './common.js';
 import { publicOwnerProfile, serializeUser } from './users.service.js';
-import { sendMail } from '../providers/mail.js';
+import { emailAccountInvite } from './emails.service.js';
 
 export const userInput = z.object({
   name: nonEmpty('Name').min(2, 'Enter the full name.'),
@@ -40,13 +40,9 @@ async function toDoc(input: UserInput) {
   };
 }
 
-async function inviteIfNeeded(doc: { email: string; name: string }, needsReset: boolean) {
-  if (!needsReset) return;
-  void sendMail({
-    to: doc.email,
-    subject: 'Your Tourista Rwanda account',
-    text: `Hello ${doc.name},\n\nAn account was created for you. Choose a password here:\n${config.FRONTEND_URL}/forgot-password\n`,
-  });
+/** Everyone an admin creates gets an email; those without a password are sent to choose one. */
+async function inviteIfNeeded(doc: { email: string; name: string; role?: string }, _needsReset: boolean) {
+  await emailAccountInvite({ name: doc.name, email: doc.email, role: doc.role ?? 'tourist' });
 }
 
 export const usersRouter = Router();
@@ -68,7 +64,7 @@ usersRouter.post('/bulk/', requireRole('admin'), persistImages, ah(async (req, r
   if (existing) throw conflict(`An account with ${existing.email} already exists.`);
   const built = await Promise.all(rows.map(toDoc));
   const created = await User.insertMany(built.map((b) => b.doc));
-  built.forEach((b) => void inviteIfNeeded(b.doc, b.needsReset));
+  for (const b of built) await inviteIfNeeded(b.doc, b.needsReset);
   res.status(201).json(created.map((d: any) => serializeUser(d.toObject(), req.user)));
 }));
 
@@ -77,7 +73,7 @@ usersRouter.post('/', requireRole('admin'), persistImages, ah(async (req, res) =
   if (await User.exists({ email: input.email })) throw conflict(`An account with ${input.email} already exists.`);
   const { doc, needsReset } = await toDoc(input);
   const created = await User.create(doc);
-  void inviteIfNeeded(doc, needsReset);
+  await inviteIfNeeded(doc, needsReset);
   res.status(201).json(serializeUser(created.toObject(), req.user));
 }));
 

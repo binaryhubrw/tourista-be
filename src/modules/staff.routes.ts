@@ -10,6 +10,7 @@ import { authenticate, requireRole, type AuthUser } from '../middleware/auth.js'
 import { body, provided, query } from '../middleware/validate.js';
 import { email, nonEmpty, phone } from './common.js';
 import { notify } from './notifications.service.js';
+import { emailStaffAdded, emailStaffStatus } from './emails.service.js';
 
 const SHAPE = ['passwordHash', 'passwordResetTokenHash', 'passwordResetExpiresAt', 'preferences', 'bankAccount', 'mtnNumber', 'airtelNumber'];
 
@@ -88,6 +89,9 @@ staffRouter.post('/', ah(async (req, res) => {
     joinedAt: new Date().toISOString(),
   });
   await notify([doc._id], { kind: 'staff', title: 'You were added as a manager', body: `You can now manage ${doc.assignedListingIds.length} branch${doc.assignedListingIds.length === 1 ? '' : 'es'}.`, path: '/business' });
+  const owner = await User.findById(ownerId, { name: 1, businessName: 1 }).lean<any>();
+  const branches = (await Business.find({ _id: { $in: doc.assignedListingIds } }, { name: 1 }).lean<any[]>()).map((b) => b.name as string);
+  await emailStaffAdded({ name: doc.name, email: doc.email }, owner?.businessName || owner?.name || 'The owner', branches);
   res.status(201).json(dto(doc.toObject()));
 }));
 
@@ -106,6 +110,9 @@ staffRouter.patch('/:id/', ah(async (req, res) => {
   if (password) set.passwordHash = await bcrypt.hash(password, BCRYPT_COST);
   if (rest.assignedListingIds) set.assignedListingIds = [...new Set(rest.assignedListingIds)];
   const doc = await User.findByIdAndUpdate(existing._id, { $set: set }, { new: true }).lean<any>();
+  if (patch.active !== undefined && patch.active !== (existing.active ?? true)) {
+    await emailStaffStatus({ name: doc.name, email: doc.email }, patch.active);
+  }
   res.json(dto(doc));
 }));
 

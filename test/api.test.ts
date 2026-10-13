@@ -244,7 +244,9 @@ describe('bookings', () => {
       services: [{ id: 'only-room', name: 'The Room', priceRwf: 30000, unit: 'per night', capacity: 2, available: 1, group: 'room' }],
     }, 'owner');
     expect(created.status).toBe(201);
+    expect(created.body.approvalStatus).toBe('pending');
     const id = created.body.id;
+    expect((await http.post(`/businesses/${id}/approve/`, {}, 'admin')).status).toBe(200);
     const date = futureDate(200);
     // Pending requests hold stock too, so eight simultaneous requests for the last room: one wins.
     const attempts = await Promise.all(Array.from({ length: 8 }, (_, i) =>

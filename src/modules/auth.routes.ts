@@ -14,7 +14,7 @@ import { persistImages } from '../middleware/persistImages.js';
 import { airtelNumber, bankAccount, email, mtnNumber, nonEmpty, phone, trimmed } from './common.js';
 import { serializeUser, withStaffOwner } from './users.service.js';
 import { adminIds, notify } from './notifications.service.js';
-import { sendMail } from '../providers/mail.js';
+import { emailPasswordChanged, emailPasswordReset, emailWelcome } from './emails.service.js';
 
 const password = z.string({ error: 'Enter a password.' }).min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters for your password.`).max(200);
 
@@ -94,6 +94,7 @@ authRouter.post('/register/', limiter, ah(async (req, res) => {
   if (user.role === 'business_owner') {
     await notify(await adminIds(), { kind: 'staff', title: 'New business owner joined', body: `${user.businessName || user.name} created an account.`, path: '/users' });
   }
+  await emailWelcome({ name: user.name, email: user.email, role: user.role });
   res.status(201).json({ token: signToken(user), user });
 }));
 
@@ -141,11 +142,7 @@ authRouter.post('/password-reset/', limiter, ah(async (req, res) => {
     doc.passwordResetTokenHash = hashToken(token);
     doc.passwordResetExpiresAt = new Date(Date.now() + 3_600_000).toISOString();
     await doc.save();
-    void sendMail({
-      to: doc.email,
-      subject: 'Reset your Tourista Rwanda password',
-      text: `Hello ${doc.name},\n\nUse this link within one hour to choose a new password:\n${config.FRONTEND_URL}/reset-password?token=${token}\n\nIf you did not ask for this, you can ignore this email.`,
-    });
+    await emailPasswordReset({ name: doc.name, email: doc.email }, `${config.FRONTEND_URL}/reset-password?token=${token}`);
   }
   res.status(204).end(); // always 204: no account enumeration
 }));
@@ -160,5 +157,6 @@ authRouter.post('/password-reset/confirm/', limiter, ah(async (req, res) => {
   doc.passwordResetTokenHash = undefined;
   doc.passwordResetExpiresAt = undefined;
   await doc.save();
+  await emailPasswordChanged({ name: doc.name, email: doc.email });
   res.status(204).end();
 }));

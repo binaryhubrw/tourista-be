@@ -128,6 +128,12 @@ const businessSchema = new Schema({
   signatureDish: str(),
   /** Bumped inside booking transactions to force write conflicts (see §8.4). */
   bookingSeq: { type: Number, default: 0 },
+  /** Owner-created listings wait for admin approval. Missing means approved (data from before approvals). */
+  approvalStatus: str({ enum: ['pending', 'approved', 'rejected'], index: true }),
+  rejectionReason: str(),
+  submittedAt: str(),
+  reviewedAt: str(),
+  reviewedBy: str(),
   createdAt: str({ required: true, index: true }),
 }, opts);
 
@@ -243,6 +249,8 @@ const bookingSchema = new Schema({
   ownerId: str(),
   /** The guest must send the first transfer before this instant. */
   paymentDueAt: str(),
+  /** Set once the "last chance to pay" email has gone out. */
+  paymentReminderSentAt: str(),
   declinedReason: str(),
   notes: str(),
   createdAt: str({ required: true }),

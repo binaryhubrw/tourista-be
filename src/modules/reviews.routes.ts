@@ -12,7 +12,9 @@ import { authenticate } from '../middleware/auth.js';
 import { body, query } from '../middleware/validate.js';
 import { invalidateSearchIndex } from './search.service.js';
 import { hostRecipients } from './hosts.js';
+import { isApproved } from './listingVisibility.js';
 import { adminIds, notify } from './notifications.service.js';
+import { emailNewReview } from './emails.service.js';
 
 const targetModels = { location: Location, experience: Experience, business: Business } as const;
 
@@ -47,7 +49,9 @@ reviewsRouter.get('/', ah(async (req, res) => {
 reviewsRouter.post('/', authenticate, ah(async (req, res) => {
   const input = body(req, reviewInput);
   const target = await targetModels[input.targetType].findById(input.targetId, { name: 1, title: 1 }).lean<any>();
-  if (!target) throw unprocessable('That place or listing could not be found, so it cannot be reviewed.');
+  if (!target || (input.targetType === 'business' && !isApproved(await Business.findById(input.targetId, { approvalStatus: 1 }).lean<any>()))) {
+    throw unprocessable('That place or listing could not be found, so it cannot be reviewed.');
+  }
   const author = await User.findById(req.user!.id, { avatar: 1 }).lean<any>();
   const review = {
     _id: newId('rev'),
@@ -78,6 +82,7 @@ reviewsRouter.post('/', authenticate, ah(async (req, res) => {
   const text = `${review.userName} rated ${review.targetName} ${review.rating} star${review.rating === 1 ? '' : 's'}.`;
   await notify(hosts, { kind: 'review', title: 'New review on your branch', body: text, path: '/reviews' }, req.user!.id);
   await notify(await adminIds(), { kind: 'review', title: 'New review', body: text, path: '/reviews' }, req.user!.id);
+  if (business) await emailNewReview(review, business.ownerId, input.targetId);
   res.status(201).json(toDto(review));
 }));
 

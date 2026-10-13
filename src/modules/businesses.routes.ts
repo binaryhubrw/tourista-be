@@ -7,11 +7,14 @@ import { ah } from '../utils/async.js';
 import { conflict, forbidden, notFound, unprocessable } from '../utils/errors.js';
 import { newId } from '../utils/ids.js';
 import { toDto, toDtos } from '../utils/dto.js';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { authenticate, optionalAuth, requireRole } from '../middleware/auth.js';
 import { body, provided, query } from '../middleware/validate.js';
 import { persistImages } from '../middleware/persistImages.js';
 import { bulk, coordinates, money, nonEmpty } from './common.js';
 import { invalidateSearchIndex } from './search.service.js';
+import { APPROVED_FILTER, canSeeListing, visibleListings } from './listingVisibility.js';
+import { adminIds, notify } from './notifications.service.js';
+import { emailListingDecision, emailListingSubmitted } from './emails.service.js';
 
 const serviceInput = z.object({
   id: z.string().trim().min(1).max(80).optional(),
@@ -103,18 +106,41 @@ async function prepareNew(input: BusinessInput, actor: { id: string; role: strin
     data.ownerId = ownerId;
     data.ownerName = await ownerName(ownerId);
   }
-  return { ...data, _id: newId('biz'), rating: 0, reviewCount: 0, createdAt: new Date().toISOString() };
+  const now = new Date().toISOString();
+  // Admins publish immediately; everything an owner creates waits for an admin.
+  const approval = actor.role === 'admin'
+    ? { approvalStatus: 'approved', reviewedAt: now, reviewedBy: actor.id }
+    : { approvalStatus: 'pending', submittedAt: now };
+  return { ...data, ...approval, _id: newId('biz'), rating: 0, reviewCount: 0, createdAt: now };
+}
+
+/** Tells admins (in the app and by email) that a listing is waiting. */
+async function announceSubmission(business: any) {
+  await notify(await adminIds(), {
+    kind: 'system', title: 'Listing waiting for approval', body: `${business.ownerName || 'An owner'} submitted ${business.name}.`,
+    path: `/businesses/${business._id}`,
+  });
+  await emailListingSubmitted(business, business.ownerName || 'A business owner');
 }
 
 export const businessesRouter = Router();
 
-businessesRouter.get('/', ah(async (req, res) => {
-  const q = query(req, z.object({ owner: z.string().optional(), category: z.string().optional(), locationId: z.string().optional() }));
-  const filter: Record<string, string> = {};
-  if (q.owner) filter.ownerId = q.owner;
-  if (q.category) filter.category = q.category;
-  if (q.locationId) filter.locationId = q.locationId;
-  res.json(toDtos(await Business.find(filter).sort({ createdAt: -1 }).lean(), ['bookingSeq']));
+/**
+ * Public listing. Only approved businesses are shown to travellers; owners also see their own
+ * pending and rejected ones, staff their assigned branches, and admins everything.
+ */
+businessesRouter.get('/', optionalAuth, ah(async (req, res) => {
+  const q = query(req, z.object({
+    owner: z.string().optional(), category: z.string().optional(), locationId: z.string().optional(),
+    approvalStatus: z.enum(['pending', 'approved', 'rejected']).optional(),
+  }));
+  const conditions: Record<string, unknown>[] = [visibleListings(req.user)];
+  if (q.owner) conditions.push({ ownerId: q.owner });
+  if (q.category) conditions.push({ category: q.category });
+  if (q.locationId) conditions.push({ locationId: q.locationId });
+  if (q.approvalStatus === 'approved') conditions.push({ ...APPROVED_FILTER });
+  else if (q.approvalStatus) conditions.push({ approvalStatus: q.approvalStatus });
+  res.json(toDtos(await Business.find({ $and: conditions }).sort({ createdAt: -1 }).lean(), ['bookingSeq']));
 }));
 
 businessesRouter.post('/bulk/', authenticate, requireRole('admin'), persistImages, ah(async (req, res) => {
@@ -129,12 +155,13 @@ businessesRouter.post('/bulk/', authenticate, requireRole('admin'), persistImage
 businessesRouter.post('/', authenticate, requireRole('business_owner', 'admin'), persistImages, ah(async (req, res) => {
   const created = await Business.create(await prepareNew(body(req, businessInput), req.user!));
   invalidateSearchIndex();
+  if (created.approvalStatus === 'pending') await announceSubmission(created.toObject());
   res.status(201).json(toDto(created.toObject(), ['bookingSeq']));
 }));
 
 businessesRouter.get('/:id/payout/', authenticate, ah(async (req, res) => {
-  const biz = await Business.findById(req.params.id, { name: 1, ownerId: 1 }).lean<any>();
-  if (!biz) throw notFound('Business');
+  const biz = await Business.findById(req.params.id, { name: 1, ownerId: 1, approvalStatus: 1 }).lean<any>();
+  if (!biz || !canSeeListing(biz, req.user)) throw notFound('Business');
   const owner = biz.ownerId ? await User.findById(biz.ownerId).lean<any>() : null;
   res.json({
     businessName: owner?.businessName?.trim() || owner?.name || biz.name,
@@ -145,9 +172,44 @@ businessesRouter.get('/:id/payout/', authenticate, ah(async (req, res) => {
   });
 }));
 
-businessesRouter.get('/:id/', ah(async (req, res) => {
-  const doc = await Business.findById(req.params.id).lean();
-  if (!doc) throw notFound('Business');
+businessesRouter.get('/:id/', optionalAuth, ah(async (req, res) => {
+  const doc = await Business.findById(req.params.id).lean<any>();
+  // A pending or rejected listing does not exist as far as the public is concerned.
+  if (!doc || !canSeeListing(doc, req.user)) throw notFound('Business');
+  res.json(toDto(doc, ['bookingSeq']));
+}));
+
+/** Admin publishes a pending (or previously rejected) listing. */
+businessesRouter.post('/:id/approve/', authenticate, requireRole('admin'), ah(async (req, res) => {
+  const existing = await Business.findById(req.params.id).lean<any>();
+  if (!existing) throw notFound('Business');
+  if (existing.approvalStatus !== 'pending' && existing.approvalStatus !== 'rejected') throw conflict('This listing is already approved.');
+  const doc = await Business.findOneAndUpdate(
+    { _id: existing._id, approvalStatus: existing.approvalStatus },
+    { $set: { approvalStatus: 'approved', reviewedAt: new Date().toISOString(), reviewedBy: req.user!.id }, $unset: { rejectionReason: 1 } },
+    { new: true },
+  ).lean<any>();
+  if (!doc) throw conflict('This listing changed. Refresh and try again.');
+  invalidateSearchIndex();
+  await notify([doc.ownerId], { kind: 'system', title: 'Your listing is live', body: `${doc.name} was approved and is now visible to travellers.`, path: '/business' });
+  await emailListingDecision(doc, true);
+  res.json(toDto(doc, ['bookingSeq']));
+}));
+
+/** Admin hides a listing (new submission or one already live) and tells the owner why. */
+businessesRouter.post('/:id/reject/', authenticate, requireRole('admin'), ah(async (req, res) => {
+  const { reason } = body(req, z.object({ reason: z.string({ error: 'Tell the owner why.' }).trim().min(5, 'Tell the owner why (at least 5 characters).').max(500) }));
+  const existing = await Business.findById(req.params.id).lean<any>();
+  if (!existing) throw notFound('Business');
+  if (existing.approvalStatus === 'rejected') throw conflict('This listing is already rejected.');
+  const doc = await Business.findOneAndUpdate(
+    { _id: existing._id },
+    { $set: { approvalStatus: 'rejected', rejectionReason: reason, reviewedAt: new Date().toISOString(), reviewedBy: req.user!.id } },
+    { new: true },
+  ).lean<any>();
+  invalidateSearchIndex();
+  await notify([doc.ownerId], { kind: 'system', title: 'Your listing needs changes', body: `${doc.name} was not approved: ${reason}`, path: '/business' });
+  await emailListingDecision(doc, false, reason);
   res.json(toDto(doc, ['bookingSeq']));
 }));
 
@@ -169,7 +231,11 @@ businessesRouter.patch('/:id/', authenticate, requireRole('business_owner', 'sta
   const patch = provided(body(req, businessInput.partial()), req.body);
   const data = await normalise(patch, req.user!, existing);
   if (data.ownerId) data.ownerName = await ownerName(data.ownerId);
-  const doc = await Business.findByIdAndUpdate(req.params.id, { $set: data }, { new: true }).lean();
+  // An owner who fixes a rejected listing sends it back for review.
+  const resubmit = user.role === 'business_owner' && existing.approvalStatus === 'rejected';
+  if (resubmit) Object.assign(data, { approvalStatus: 'pending', submittedAt: new Date().toISOString() });
+  const doc = await Business.findByIdAndUpdate(req.params.id, { $set: data, ...(resubmit ? { $unset: { rejectionReason: 1 } } : {}) }, { new: true }).lean<any>();
   invalidateSearchIndex();
+  if (resubmit) await announceSubmission(doc);
   res.json(toDto(doc, ['bookingSeq']));
 }));

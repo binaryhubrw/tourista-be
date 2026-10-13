@@ -13,5 +13,6 @@ export const badRequest = (m: string, errors?: FieldError[]) => new HttpError(40
 export const unauthorized = (m = 'Log in to continue.') => new HttpError(401, m);
 export const forbidden = (m = 'You do not have permission to do that.') => new HttpError(403, m);
 export const notFound = (what: string) => new HttpError(404, `${what} was not found.`);
+export const tooMany = (m: string) => new HttpError(429, m);
 export const conflict = (m: string) => new HttpError(409, m);
 export const unprocessable = (m: string) => new HttpError(422, m);

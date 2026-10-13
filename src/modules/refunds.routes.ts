@@ -14,6 +14,7 @@ import { hostListingIds, hostRecipients } from './hosts.js';
 import { adminIds, notify } from './notifications.service.js';
 import { invalidateSearchIndex } from './search.service.js';
 import { nonEmpty } from './common.js';
+import { emailRefundApproved, emailRefundCompleted, emailRefundRejected, emailRefundRequested } from './emails.service.js';
 
 const method = z.enum(['card', 'mtn', 'airtel']);
 
@@ -101,6 +102,7 @@ refundsRouter.post('/', requireRole('tourist'), persistImages, ah(async (req, re
   invalidateSearchIndex();
   await notify(await adminIds(), { kind: 'refund', title: 'Refund needs a decision', body: `${booking.customerName} asked for a refund on ${booking.targetName}.`, path: `/refunds/${refund._id}` });
   await notify(await hostRecipients(booking), { kind: 'refund', title: 'Refund requested', body: `${booking.customerName} asked for a refund on ${booking.targetName}. Admin will review it first.`, path: `/refunds/${refund._id}` });
+  await emailRefundRequested(refund, booking);
   res.status(201).json(toDto(refund));
 }));
 
@@ -121,6 +123,7 @@ refundsRouter.post('/:id/approve/', requireRole('admin'), ah(async (req, res) =>
   if (!updated) throw conflict('This refund changed. Refresh and try again.');
   await notify(await hostRecipients(booking), { kind: 'refund', title: 'Send the refund to the guest', body: `Admin approved a refund of ${updated.amountRwf.toLocaleString('en-US')} RWF for ${booking.customerName}. Send it and upload your receipt.`, path: `/refunds/${updated._id}` });
   await notify([booking.userId], { kind: 'refund', title: 'Refund approved', body: `Admin approved your refund for ${booking.targetName}. The host will send the money back.`, path: `/refunds/${updated._id}` });
+  await emailRefundApproved(updated, booking);
   res.json(toDto(updated));
 }));
 
@@ -136,6 +139,7 @@ refundsRouter.post('/:id/reject/', requireRole('admin'), ah(async (req, res) => 
   if (!updated) throw conflict('This refund changed. Refresh and try again.');
   await Booking.updateOne({ _id: booking._id, status: 'RefundPending' }, { $set: { status: 'Confirmed', 'payment.ledger': 'approved' } });
   await notify([booking.userId], { kind: 'refund', title: 'Refund rejected', body: `Your refund request for ${booking.targetName} was rejected.${note ? ` ${note}` : ''}`, path: `/refunds/${updated._id}` });
+  await emailRefundRejected(updated, booking, note);
   res.json(toDto(updated));
 }));
 
@@ -160,10 +164,11 @@ refundsRouter.post('/:id/complete/', requireRole('business_owner', 'staff'), per
     { new: true },
   ).lean<any>();
   if (!updated) throw conflict('This refund changed. Refresh and try again.');
-  await Booking.updateOne({ _id: booking._id }, { $set: { status: 'Refunded', 'payment.status': 'Refunded', 'payment.ledger': 'refunded' } });
+  const refundedBooking = await Booking.findOneAndUpdate({ _id: booking._id }, { $set: { status: 'Refunded', 'payment.status': 'Refunded', 'payment.ledger': 'refunded' } }, { new: true }).lean<any>();
   invalidateSearchIndex();
   await notify([booking.userId], { kind: 'refund', title: 'Refund completed', body: `${updated.amountRwf.toLocaleString('en-US')} RWF was sent to ${refund.receiveAccount}.`, path: `/refunds/${updated._id}` });
   await notify(await adminIds(), { kind: 'refund', title: 'Refund completed', body: `${booking.targetName}: the host returned ${updated.amountRwf.toLocaleString('en-US')} RWF.`, path: `/refunds/${updated._id}` });
+  await emailRefundCompleted(updated, refundedBooking ?? booking);
   res.json(toDto(updated));
 }));
 
