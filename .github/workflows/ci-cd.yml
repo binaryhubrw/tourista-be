@@ -1,0 +1,114 @@
+name: CI/CD
+
+# main -> production. Pull requests run the checks and build the image without pushing.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  IMAGE: ghcr.io/binaryhubrw/tourista-be
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+
+  build:
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      environment: ${{ steps.target.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve target environment
+        id: target
+        run: |
+          case "$GITHUB_REF" in
+            refs/heads/main) echo "environment=production" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        if: steps.target.outputs.environment != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ steps.target.outputs.environment != '' }}
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.target.outputs.environment || 'ci' }}
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.environment != ''
+    runs-on: [self-hosted, "${{ vars.DEPLOY_RUNNER_LABEL || 'testing' }}"]
+    environment: ${{ needs.build.outputs.environment }}
+    env:
+      ENVIRONMENT: ${{ needs.build.outputs.environment }}
+      DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: docker-compose.prod.yml
+          sparse-checkout-cone-mode: false
+
+      # Self-hosted runners often have a GPG-backed docker credential helper that breaks
+      # `docker login`; use an isolated config with inline auth instead.
+      - name: Configure GHCR auth
+        env:
+          GHCR_USER: ${{ vars.GHCR_USER || github.actor }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+        run: |
+          set -euo pipefail
+          test -n "$GHCR_PAT" || { echo "::error::GHCR_PAT secret is not set"; exit 1; }
+          CFG="$RUNNER_TEMP/docker-config"
+          mkdir -p "$CFG"
+          AUTH="$(printf '%s:%s' "$GHCR_USER" "$GHCR_PAT" | base64 | tr -d '\n')"
+          printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\n' "$AUTH" > "$CFG/config.json"
+          echo "DOCKER_CONFIG=$CFG" >> "$GITHUB_ENV"
+
+      - name: Deploy
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          set -euo pipefail
+          DEPLOY_DIR="${DEPLOY_DIR:-$HOME/tourista/tourista-be-$ENVIRONMENT}"
+          mkdir -p "$DEPLOY_DIR"
+          cp docker-compose.prod.yml "$DEPLOY_DIR/docker-compose.yml"
+          cd "$DEPLOY_DIR"
+          if [ -n "$ENV_FILE" ]; then
+            (umask 077 && printf '%s\n' "$ENV_FILE" > .env)
+          fi
+          test -f .env || { echo "::error::Missing $DEPLOY_DIR/.env — set the ENV_FILE environment secret or create it from .env.production.example"; exit 1; }
+          export IMAGE_TAG="sha-$GITHUB_SHA"
+          docker compose pull api
+          docker compose up -d --remove-orphans
+          docker image prune -f
