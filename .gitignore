@@ -4,3 +4,4 @@ uploads
 .env
 .data
 .env.docker
+.env.production
