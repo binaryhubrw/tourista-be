@@ -9,7 +9,7 @@ export const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace
 export const formatRwf = (n: number) => `RWF ${new Intl.NumberFormat('en-US').format(Math.round(n))}`;
 
 const locationHaystack = (l: Location) =>
-  `${l.name} ${l.district} ${l.province} ${l.shortDescription} ${l.description} ${l.category} ${l.thingsToDo.join(' ')}`;
+  `${l.name} ${l.district} ${l.province} ${l.shortDescription} ${l.description} ${l.category} ${(l.thingsToDo ?? []).join(' ')}`;
 
 const hasTerm = (haystack: string, t: string) => haystack.includes(t) || (t.endsWith('s') && t.length > 3 && haystack.includes(t.slice(0, -1)));
 

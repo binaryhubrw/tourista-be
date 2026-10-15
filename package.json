@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "seed": "tsx src/db/seed/run.ts",
+    "seed:places": "tsx src/db/seed/places.ts",
     "seed:reset": "tsx src/db/seed/run.ts --reset",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

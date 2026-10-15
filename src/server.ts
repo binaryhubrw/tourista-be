@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { config } from './config.js';
 import { connectDb, disconnectDb } from './db/connect.js';
+import { seedPlaces } from './db/seed/places.js';
 import { logger } from './logger.js';
 import { ensureUploadDir } from './providers/storage.js';
 import { expireStaleBookings, sendPaymentReminders } from './modules/bookings.service.js';
@@ -26,6 +27,13 @@ try {
   await connectDb();
 } catch (err) {
   logger.fatal({ err }, 'Could not connect to MongoDB');
+  process.exit(1);
+}
+try {
+  const placed = await seedPlaces();
+  logger.info(placed, 'Location seed applied');
+} catch (err) {
+  logger.fatal({ err }, 'Location seed failed');
   process.exit(1);
 }
 const server = createApp().listen(config.PORT, () => logger.info(`Tourista API listening on :${config.PORT} (/api)`));

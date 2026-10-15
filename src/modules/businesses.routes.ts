@@ -155,8 +155,9 @@ businessesRouter.post('/bulk/', authenticate, requireRole('admin'), persistImage
 businessesRouter.post('/', authenticate, requireRole('business_owner', 'admin'), persistImages, ah(async (req, res) => {
   const created = await Business.create(await prepareNew(body(req, businessInput), req.user!));
   invalidateSearchIndex();
-  if (created.approvalStatus === 'pending') await announceSubmission(created.toObject());
   res.status(201).json(toDto(created.toObject(), ['bookingSeq']));
+  // Notice admins after the owner already has a success response. A slow or failed email must not leave Submit spinning or turn a saved branch into an error.
+  if (created.approvalStatus === 'pending') void announceSubmission(created.toObject()).catch(() => undefined);
 }));
 
 businessesRouter.get('/:id/payout/', authenticate, ah(async (req, res) => {
