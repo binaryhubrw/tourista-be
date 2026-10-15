@@ -75,8 +75,11 @@ authRouter.post('/register/', limiter, ah(async (req, res) => {
   if (input.role === 'business_owner') {
     const problems: { path: string; message: string }[] = [];
     if (!input.businessName || input.businessName.length < 2) problems.push({ path: 'businessName', message: 'Enter your business name.' });
-    for (const [path, schema] of [['bankAccount', bankAccount], ['mtnNumber', mtnNumber], ['airtelNumber', airtelNumber]] as const) {
-      const r = schema.safeParse((input as any)[path] ?? '');
+    const payouts = [['bankAccount', bankAccount], ['mtnNumber', mtnNumber], ['airtelNumber', airtelNumber]] as const;
+    const filled = payouts.filter(([path]) => String((input as any)[path] ?? '').trim());
+    if (!filled.length) problems.push({ path: 'bankAccount', message: 'Add at least one account. The other methods are optional.' });
+    for (const [path, schema] of filled) {
+      const r = schema.safeParse((input as any)[path]);
       if (!r.success) problems.push({ path, message: r.error.issues[0].message });
     }
     if (problems.length) throw badRequest(problems[0].message, problems);

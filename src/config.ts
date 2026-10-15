@@ -50,7 +50,14 @@ const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '
 /** Absolute folder where uploaded photos are kept: `<project>/uploads` unless UPLOAD_DIR says otherwise. */
 export const uploadDir = path.resolve(projectRoot, config.UPLOAD_DIR);
 
-export const corsOrigins = config.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+/** Vite may land on any of these when 5173 is taken. Allowed in development and test, on top of CORS_ORIGINS. */
+const devFrontendOrigins = Array.from({ length: 5180 - 5170 + 1 }, (_, i) => 5170 + i).flatMap((port) => [
+  `http://localhost:${port}`,
+  `http://127.0.0.1:${port}`,
+]);
+
+const configuredOrigins = config.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+export const corsOrigins = [...new Set(isProd ? configuredOrigins : [...configuredOrigins, ...devFrontendOrigins])];
 
 if (isProd) {
   const problems: string[] = [];

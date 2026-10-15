@@ -230,7 +230,7 @@ const paths: Json = {
   '/health': { get: op({ tag: 'System', summary: 'Health check', ok: [200, obj({ status: str({ example: 'ok' }) })] }) },
 
   '/auth/register/': { post: op({ tag: 'Auth', summary: 'Create a tourist or business-owner account',
-    description: 'Business owners must supply `businessName`, a 10–20 digit `bankAccount`, an MTN (078/079) and an Airtel (072/073) number. Role `admin` is refused. Rate limited to 10/min/IP.',
+    description: 'Business owners must supply `businessName` and at least one payout account: a 10–20 digit `bankAccount`, an MTN number (078/079), or an Airtel number (072/073). The other accounts are optional. Role `admin` is refused. Rate limited to 10/min/IP.',
     body: ref('RegisterInput'), ok: [201, ref('AuthResult')], errs: [400, 403, 409] }) },
   '/auth/login/': { post: op({ tag: 'Auth', summary: 'Log in', description: 'Unknown email and wrong password return the same 401 message. Rate limited.',
     body: ref('LoginInput'), ok: [200, ref('AuthResult')], errs: [400, 401] }) },
