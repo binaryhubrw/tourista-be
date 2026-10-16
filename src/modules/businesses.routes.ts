@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { BADGES, BUSINESS_CATEGORIES, LISTING_KINDS, OFFERING_GROUPS, PROPERTY_TYPES, vehiclePlates } from '../domain/catalog.js';
-import { maskBank } from '../domain/payout.js';
 import { Business, Location, User } from '../models/index.js';
 import { ah } from '../utils/async.js';
 import { conflict, forbidden, notFound, unprocessable } from '../utils/errors.js';
@@ -166,8 +165,8 @@ businessesRouter.get('/:id/payout/', authenticate, ah(async (req, res) => {
   const owner = biz.ownerId ? await User.findById(biz.ownerId).lean<any>() : null;
   res.json({
     businessName: owner?.businessName?.trim() || owner?.name || biz.name,
-    // Customers need to see where their money goes; bank accounts are shown masked.
-    ...(owner?.bankAccount ? { bankAccount: maskBank(owner.bankAccount) } : {}),
+    // Customers need to see where their money goes; bank accounts are shown in full.
+    ...(owner?.bankAccount ? { bankAccount: owner.bankAccount } : {}),
     ...(owner?.mtnNumber ? { mtnNumber: owner.mtnNumber } : {}),
     ...(owner?.airtelNumber ? { airtelNumber: owner.airtelNumber } : {}),
   });
@@ -212,6 +211,23 @@ businessesRouter.post('/:id/reject/', authenticate, requireRole('admin'), ah(asy
   await notify([doc.ownerId], { kind: 'system', title: 'Your listing needs changes', body: `${doc.name} was not approved: ${reason}`, path: '/business' });
   await emailListingDecision(doc, false, reason);
   res.json(toDto(doc, ['bookingSeq']));
+}));
+
+/** Admin hides a live listing from travellers (or brings it back) without rejecting it. */
+businessesRouter.patch('/:id/active/', authenticate, requireRole('admin'), ah(async (req, res) => {
+  const { active } = body(req, z.object({ active: z.boolean() }));
+  const doc = await Business.findByIdAndUpdate(req.params.id, { $set: { active } }, { new: true }).lean<any>();
+  if (!doc) throw notFound('Business');
+  invalidateSearchIndex();
+  res.json(toDto(doc, ['bookingSeq']));
+}));
+
+/** Admin removes a company branch for good. Bookings and reviews keep their stored copy of the name. */
+businessesRouter.delete('/:id/', authenticate, requireRole('admin'), ah(async (req, res) => {
+  const doc = await Business.findByIdAndDelete(req.params.id);
+  if (!doc) throw notFound('Business');
+  invalidateSearchIndex();
+  res.status(204).end();
 }));
 
 businessesRouter.patch('/:id/', authenticate, requireRole('business_owner', 'staff', 'admin'), persistImages, ah(async (req, res) => {

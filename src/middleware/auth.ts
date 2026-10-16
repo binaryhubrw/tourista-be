@@ -45,8 +45,12 @@ async function loadUser(req: Request) {
   const doc = await User.findById(sub).lean();
   if (!doc) throw unauthorized('Your session has expired. Log in again.');
   const { _id, name, email, role, avatar, phone, country, businessName, ownerId, assignedListingIds, active } = doc as any;
-  // A deactivated staff account stops working immediately, even with a valid token.
-  if (role === 'staff' && active === false) throw unauthorized('This staff account is deactivated. Ask the owner to activate it.');
+  // A deactivated account stops working immediately, even with a valid token.
+  if (active === false) {
+    throw unauthorized(role === 'staff'
+      ? 'This staff account is deactivated. Ask the owner to activate it.'
+      : 'This account is deactivated. Contact support for help.');
+  }
   req.user = { id: _id, name, email, role, avatar, phone, country, businessName, ownerId, assignedListingIds: assignedListingIds ?? [] };
   return req.user;
 }

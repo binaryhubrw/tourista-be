@@ -49,7 +49,7 @@ reviewsRouter.get('/', ah(async (req, res) => {
 reviewsRouter.post('/', authenticate, ah(async (req, res) => {
   const input = body(req, reviewInput);
   const target = await targetModels[input.targetType].findById(input.targetId, { name: 1, title: 1 }).lean<any>();
-  if (!target || (input.targetType === 'business' && !isApproved(await Business.findById(input.targetId, { approvalStatus: 1 }).lean<any>()))) {
+  if (!target || (input.targetType === 'business' && !isApproved(await Business.findById(input.targetId, { approvalStatus: 1, active: 1 }).lean<any>()))) {
     throw unprocessable('That place or listing could not be found, so it cannot be reviewed.');
   }
   const author = await User.findById(req.user!.id, { avatar: 1 }).lean<any>();

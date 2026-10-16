@@ -130,6 +130,8 @@ const businessSchema = new Schema({
   bookingSeq: { type: Number, default: 0 },
   /** Owner-created listings wait for admin approval. Missing means approved (data from before approvals). */
   approvalStatus: str({ enum: ['pending', 'approved', 'rejected'], index: true }),
+  /** Admin can deactivate a listing to hide it from travellers. Missing means active. */
+  active: Boolean,
   rejectionReason: str(),
   submittedAt: str(),
   reviewedAt: str(),

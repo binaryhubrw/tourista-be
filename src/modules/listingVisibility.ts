@@ -4,12 +4,13 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 /**
  * Listings created by business owners wait for admin approval. Documents without the field predate
- * approvals and count as approved, so existing data keeps working.
+ * approvals and count as approved, so existing data keeps working. An admin-deactivated listing
+ * (`active: false`) is hidden from travellers too, but stays visible to its owner and to admins.
  */
-export const APPROVED_FILTER = { approvalStatus: { $nin: ['pending', 'rejected'] } } as const;
+export const APPROVED_FILTER = { approvalStatus: { $nin: ['pending', 'rejected'] }, active: { $ne: false } } as const;
 
-export const isApproved = (doc?: { approvalStatus?: string } | null) =>
-  !!doc && doc.approvalStatus !== 'pending' && doc.approvalStatus !== 'rejected';
+export const isApproved = (doc?: { approvalStatus?: string; active?: boolean } | null) =>
+  !!doc && doc.approvalStatus !== 'pending' && doc.approvalStatus !== 'rejected' && doc.active !== false;
 
 /** Mongo filter for the listings this caller is allowed to see: approved ones, plus their own. */
 export function visibleListings(user?: Pick<AuthUser, 'id' | 'role' | 'assignedListingIds'>): Record<string, unknown> {

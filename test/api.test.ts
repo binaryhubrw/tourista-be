@@ -112,7 +112,7 @@ describe('auth', () => {
     expect((await http.get('/users/u-lisa/', 'tourist')).status).toBe(403);
     const payout = await http.get('/businesses/virunga-hillside-ecolodge/payout/', 'tourist');
     expect(payout.status).toBe(200);
-    expect(payout.body.bankAccount).toBe('4001 •••• 0123');
+    expect(payout.body.bankAccount).toBe('4001234567890123');
     expect(payout.body.businessName).toBe('Virunga Hospitality');
   });
 });
@@ -403,5 +403,72 @@ describe('frontend compatibility', () => {
     // A tourist cannot skip the phone number.
     const noPhone = await http.post('/bookings/', { ...body, userId: undefined, date: futureDate(310), endDate: futureDate(311) }, 'tourist');
     expect(noPhone.status).toBe(400);
+  });
+});
+
+describe('admin moderation', () => {
+  it('deactivates and reactivates a user, blocking login while inactive', async () => {
+    const created = await http.post('/users/', { name: 'Mod Target', email: 'mod.target@example.com', role: 'tourist', password: 'password' }, 'admin');
+    expect(created.status).toBe(201);
+    const id = created.body.id;
+
+    // Only admins may change the flag.
+    expect((await http.patch(`/users/${id}/`, { active: false }, 'owner')).status).toBe(403);
+
+    const off = await http.patch(`/users/${id}/`, { active: false }, 'admin');
+    expect(off.status).toBe(200);
+    expect(off.body).toMatchObject({ active: false });
+
+    const blocked = await http.post('/auth/login/', { email: 'mod.target@example.com', password: 'password' });
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.message).toMatch(/deactivated/i);
+
+    const on = await http.patch(`/users/${id}/`, { active: true }, 'admin');
+    expect(on.body).toMatchObject({ active: true });
+    expect((await http.post('/auth/login/', { email: 'mod.target@example.com', password: 'password' })).status).toBe(200);
+
+    // An admin cannot lock themselves out.
+    const me = await http.get('/auth/me/', 'admin');
+    expect((await http.patch(`/users/${me.body.id}/`, { active: false }, 'admin')).status).toBe(409);
+  });
+
+  it('deactivates a business, hiding it from travellers until reactivated', async () => {
+    const id = 'virunga-hillside-ecolodge';
+    expect((await http.get(`/businesses/${id}/`)).status).toBe(200);
+
+    expect((await http.patch(`/businesses/${id}/active/`, { active: false }, 'owner')).status).toBe(403);
+    const off = await http.patch(`/businesses/${id}/active/`, { active: false }, 'admin');
+    expect(off.status).toBe(200);
+    expect(off.body).toMatchObject({ active: false });
+
+    expect((await http.get(`/businesses/${id}/`)).status).toBe(404);
+    const list = await http.get('/businesses/');
+    expect(list.body.some((b: any) => b.id === id)).toBe(false);
+    // The owner still sees their own hidden branch.
+    expect((await http.get('/businesses/?owner=user-business-1', 'owner')).body.some((b: any) => b.id === id)).toBe(true);
+
+    const on = await http.patch(`/businesses/${id}/active/`, { active: true }, 'admin');
+    expect(on.body).toMatchObject({ active: true });
+    expect((await http.get(`/businesses/${id}/`)).status).toBe(200);
+  });
+
+  it('deletes a business (admin only), removing it for good', async () => {
+    const created = await http.post('/businesses/', {
+      name: 'Delete Me Cafe', category: 'Restaurants', locationId: 'kigali', description: 'x',
+      image: 'https://example.com/cover.jpg', coordinates: { lat: -1.95, lng: 30.06 },
+      services: [{ name: 'Coffee', priceRwf: 2000, unit: 'per cup' }],
+    }, 'admin');
+    expect(created.status).toBe(201);
+    const id = created.body.id;
+    expect((await http.get(`/businesses/${id}/`)).status).toBe(200);
+
+    // Only admins may delete a listing.
+    expect((await http.del(`/businesses/${id}/`, 'owner')).status).toBe(403);
+
+    expect((await http.del(`/businesses/${id}/`, 'admin')).status).toBe(204);
+    expect((await http.get(`/businesses/${id}/`)).status).toBe(404);
+    expect((await http.get('/businesses/')).body.some((b: any) => b.id === id)).toBe(false);
+    // Deleting again is a clean 404.
+    expect((await http.del(`/businesses/${id}/`, 'admin')).status).toBe(404);
   });
 });

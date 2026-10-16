@@ -77,6 +77,22 @@ usersRouter.post('/', requireRole('admin'), persistImages, ah(async (req, res) =
   res.status(201).json(serializeUser(created.toObject(), req.user));
 }));
 
+// Travellers need a number to call to confirm an off-platform payment. Any logged-in user may read
+// the admins' contact details, but only those fields.
+usersRouter.get('/admins/', ah(async (_req, res) => {
+  const docs = await User.find({ role: 'admin' }, { name: 1, phone: 1, email: 1 }).lean<any[]>();
+  res.json(docs.map((d) => ({ name: d.name, phone: (d.phone ?? '').trim(), email: d.email })));
+}));
+
+/** Admin activates or deactivates an account. A deactivated account cannot log in again. */
+usersRouter.patch('/:id/', requireRole('admin'), ah(async (req, res) => {
+  const { active } = body(req, z.object({ active: z.boolean() }));
+  if (req.params.id === req.user!.id && !active) throw conflict('You cannot deactivate your own account.');
+  const doc = await User.findByIdAndUpdate(req.params.id, { $set: { active } }, { new: true }).lean<any>();
+  if (!doc) throw notFound('User');
+  res.json(serializeUser(doc, req.user));
+}));
+
 usersRouter.get('/:id/', ah(async (req, res) => {
   const doc = await User.findById(req.params.id).lean<any>();
   const privileged = req.user!.role === 'admin' || req.user!.id === req.params.id;

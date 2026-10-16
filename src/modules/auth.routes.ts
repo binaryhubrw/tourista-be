@@ -106,7 +106,11 @@ authRouter.post('/login/', limiter, ah(async (req, res) => {
   const doc = await User.findOne({ email: addr }).lean<any>();
   const ok = await bcrypt.compare(plain, doc?.passwordHash ?? DUMMY_HASH);
   if (!doc || !ok) throw new HttpError(401, BAD_LOGIN);
-  if (doc.role === 'staff' && doc.active === false) throw forbidden('This staff account is deactivated. Ask the owner to activate it.');
+  if (doc.active === false) {
+    throw forbidden(doc.role === 'staff'
+      ? 'This staff account is deactivated. Ask the owner to activate it.'
+      : 'This account is deactivated. Contact support for help.');
+  }
   const user = await withStaffOwner(serializeUser(doc, { id: doc._id, role: doc.role }));
   res.json({ token: signToken(user), user });
 }));
