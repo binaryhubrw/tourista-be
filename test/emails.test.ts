@@ -137,12 +137,12 @@ describe('booking emails', () => {
     const receipt = mails.find((m) => m.kind === 'payment.proof')!;
     const hostMail = mails.find((m) => m.kind === 'payment.proof.host')!;
     expect(receipt.to).toEqual(['amani.guest@example.com']);
-    expect(receipt.attachments.map((a) => a.filename)).toEqual([`INV-${b.id.toUpperCase()}.pdf`]);
+    expect(receipt.attachments.map((a) => a.filename)).toEqual([`INV-${b.id.toUpperCase()}.pdf`, `RCT-${b.id.toUpperCase()}.pdf`]);
     expect(receipt.attachments[0].contentType).toBe('application/pdf');
     expect(receipt.attachments[0].size).toBeGreaterThan(1500);
 
     expect(hostMail.to).toContain('business@tourista.rw');
-    expect(hostMail.attachments.map((a) => a.filename)).toEqual(expect.arrayContaining([`INV-${b.id.toUpperCase()}.pdf`, `payment-proof-${b.id.toUpperCase()}.jpg`]));
+    expect(hostMail.attachments.map((a) => a.filename)).toEqual(expect.arrayContaining([`INV-${b.id.toUpperCase()}.pdf`, `RCT-${b.id.toUpperCase()}.pdf`, `payment-proof-${b.id.toUpperCase()}.jpg`]));
     const shot = hostMail.attachments.find((a) => a.path)!;
     expect(existsSync(shot.path!)).toBe(true);
     expect(hostMail.text).toMatch(/Amount sent: RWF 60,000/);
@@ -164,6 +164,7 @@ describe('booking emails', () => {
     expect(invoice.subject).toMatch(/Payment received/);
     expect(invoice.text).toMatch(/Balance due: RWF 40,000/);
     expect(invoice.attachments[0].filename).toBe(`INV-${b.id.toUpperCase()}.pdf`);
+    expect(invoice.attachments.map((a) => a.filename)).toContain(`RCT-${b.id.toUpperCase()}.pdf`);
     expect(mails.some((m) => m.kind === 'payment.confirmed.host')).toBe(true);
 
     await http.patch('/auth/me/', { preferences: { bookingEmails: true } }, 'tourist');
@@ -239,17 +240,57 @@ describe('invoices', () => {
     expect((await http.get(`/bookings/${b.id}/invoice/`)).status).toBe(401);
   });
 
-  it('re-emails the invoice, limited to once a minute', async () => {
+  it('re-emails the invoice and receipt to the traveller and the host, limited to once a minute', async () => {
     const b = await request_();
     await http.post(`/bookings/${b.id}/decision/`, { approve: true }, 'owner');
     await http.post(`/bookings/${b.id}/pay/`, transfer({ amountRwf: 60_000 }), 'tourist');
     clearRecentMail();
     const first = await http.post(`/bookings/${b.id}/invoice/send/`, {}, 'tourist');
     expect(first.status).toBe(202);
-    expect(first.body.sentTo).toBe('amani.guest@example.com');
+    expect(first.body.sentTo).toContain('amani.guest@example.com');
+    expect(first.body.sentTo).toContain('business@tourista.rw');
     const [mail] = await sent('invoice.resend');
     expect(mail.attachments[0].contentType).toBe('application/pdf');
+    expect(mail.attachments.map((a) => a.filename)).toEqual([`INV-${b.id.toUpperCase()}.pdf`, `RCT-${b.id.toUpperCase()}.pdf`]);
     expect((await http.post(`/bookings/${b.id}/invoice/send/`, {}, 'tourist')).status).toBe(429);
+  });
+});
+
+describe('receipts', () => {
+  it('serves a receipt PDF to people on the booking and refuses everyone else', async () => {
+    const b = await request_();
+    expect((await http.get(`/bookings/${b.id}/receipt/`, 'tourist')).status).toBe(409); // nothing paid yet
+    await http.post(`/bookings/${b.id}/decision/`, { approve: true }, 'owner');
+    await http.post(`/bookings/${b.id}/pay/`, transfer({ amountRwf: 60_000 }), 'tourist');
+
+    const pdf = await request(app).get(`/api/bookings/${b.id}/receipt/`).set(as('tourist')).buffer(true).parse((res, cb) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (c: Buffer) => chunks.push(c));
+      res.on('end', () => cb(null, Buffer.concat(chunks)));
+    });
+    expect(pdf.status).toBe(200);
+    expect(pdf.headers['content-type']).toBe('application/pdf');
+    expect(pdf.headers['content-disposition']).toContain(`RCT-${b.id.toUpperCase()}.pdf`);
+    expect((pdf.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');
+
+    expect((await http.get(`/bookings/${b.id}/receipt/`, 'owner')).status).toBe(200);
+    expect((await http.get(`/bookings/${b.id}/receipt/`, 'admin')).status).toBe(200);
+    expect((await http.get(`/bookings/${b.id}/receipt/`)).status).toBe(401);
+  });
+
+  it('re-emails the receipt, limited to once a minute', async () => {
+    const b = await request_();
+    await http.post(`/bookings/${b.id}/decision/`, { approve: true }, 'owner');
+    await http.post(`/bookings/${b.id}/pay/`, transfer({ amountRwf: 60_000 }), 'tourist');
+    clearRecentMail();
+    const first = await http.post(`/bookings/${b.id}/receipt/send/`, {}, 'tourist');
+    expect(first.status).toBe(202);
+    expect(first.body.sentTo).toContain('amani.guest@example.com');
+    expect(first.body.sentTo).toContain('business@tourista.rw');
+    const [mail] = await sent('receipt.resend');
+    expect(mail.attachments[0].contentType).toBe('application/pdf');
+    expect(mail.attachments.map((a) => a.filename)).toContain(`RCT-${b.id.toUpperCase()}.pdf`);
+    expect((await http.post(`/bookings/${b.id}/receipt/send/`, {}, 'tourist')).status).toBe(429);
   });
 });
 

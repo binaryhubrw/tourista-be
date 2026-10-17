@@ -8,7 +8,7 @@ import { authenticate, optionalAuth, requireRole } from '../middleware/auth.js';
 import { persistImages } from '../middleware/persistImages.js';
 import { body, query } from '../middleware/validate.js';
 import { hostListingIds, isHostRole } from './hosts.js';
-import { emailInvoice, invoiceAttachment } from './emails.service.js';
+import { emailInvoice, emailReceipt, invoiceAttachment, receiptAttachment } from './emails.service.js';
 import { conflict, tooMany } from '../utils/errors.js';
 import {
   bookingDto, bookingInput, cancelBooking, canSee, confirmPayment, createBooking, decideBooking, expireStaleBookings,
@@ -103,9 +103,22 @@ bookingsRouter.get('/:id/invoice/', ah(async (req, res) => {
   res.send(pdf.content);
 }));
 
-const lastInvoiceEmail = new Map<string, number>();
+/** Receipt as a PDF, for the payments made so far. Same audience as the invoice. */
+bookingsRouter.get('/:id/receipt/', ah(async (req, res) => {
+  const doc = await Booking.findById(req.params.id).lean<any>();
+  if (!doc || !(await canSee(doc, req.user!))) throw notFound('Booking');
+  if (!doc.payment) throw conflict('There is no payment on this booking yet, so there is no receipt.');
+  const pdf = await receiptAttachment(doc);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${pdf.filename}"`);
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.send(pdf.content);
+}));
 
-/** Emails the current invoice to the guest again. Limited to once a minute per booking. */
+const lastInvoiceEmail = new Map<string, number>();
+const lastReceiptEmail = new Map<string, number>();
+
+/** Emails the current invoice and receipt to the traveller and the host. Limited to once a minute per booking. */
 bookingsRouter.post('/:id/invoice/send/', ah(async (req, res) => {
   const doc = await Booking.findById(req.params.id).lean<any>();
   if (!doc || !(await canSee(doc, req.user!))) throw notFound('Booking');
@@ -113,8 +126,18 @@ bookingsRouter.post('/:id/invoice/send/', ah(async (req, res) => {
   const last = lastInvoiceEmail.get(doc._id) ?? 0;
   if (Date.now() - last < 60_000) throw tooMany('An invoice was just sent. Check your inbox, or try again in a minute.');
   lastInvoiceEmail.set(doc._id, Date.now());
-  await emailInvoice(doc);
-  res.status(202).json({ sentTo: doc.customerEmail });
+  res.status(202).json({ sentTo: (await emailInvoice(doc)).join(', ') });
+}));
+
+/** Emails the current receipt (with the invoice) to the traveller and the host. Limited to once a minute per booking. */
+bookingsRouter.post('/:id/receipt/send/', ah(async (req, res) => {
+  const doc = await Booking.findById(req.params.id).lean<any>();
+  if (!doc || !(await canSee(doc, req.user!))) throw notFound('Booking');
+  if (!doc.payment) throw conflict('There is no payment on this booking yet, so there is no receipt.');
+  const last = lastReceiptEmail.get(doc._id) ?? 0;
+  if (Date.now() - last < 60_000) throw tooMany('A receipt was just sent. Check your inbox, or try again in a minute.');
+  lastReceiptEmail.set(doc._id, Date.now());
+  res.status(202).json({ sentTo: (await emailReceipt(doc)).join(', ') });
 }));
 
 bookingsRouter.get('/:id/', ah(async (req, res) => {

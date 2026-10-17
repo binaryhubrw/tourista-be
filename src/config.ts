@@ -45,7 +45,7 @@ export const config = parsed.data;
 export const isProd = config.NODE_ENV === 'production';
 export const isTest = config.NODE_ENV === 'test';
 /** Project root (this file lives in `src/` or `dist/`, one level below it). */
-const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+export const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Absolute folder where uploaded photos are kept: `<project>/uploads` unless UPLOAD_DIR says otherwise. */
 export const uploadDir = path.resolve(projectRoot, config.UPLOAD_DIR);

@@ -182,15 +182,16 @@ never fails a request. Messages are branded HTML with a plain-text version; user
 | Booking requested | guest (acknowledgement) and host/staff |
 | Host approves | guest: how to pay, host's accounts, the deadline |
 | Host declines · booking expires · last-chance reminder (30 min before) · cancellation | guest or host, as relevant |
-| **Payment proof submitted** | guest: receipt + **invoice PDF**; host/staff: details + **the screenshot attached** + invoice |
-| **Payment confirmed** | guest: **invoice PDF** (always); host copy |
+| **Payment proof submitted** | guest: **receipt PDF** + **invoice PDF**; host/staff: details + **the screenshot attached** + invoice + receipt |
+| **Payment confirmed** | guest: **invoice PDF** + **receipt PDF** (always); host copy |
 | Refund requested / approved / rejected / completed | guest, admins, host as relevant; completed includes the host's receipt and an updated invoice |
 | New review | the host |
 
 Guests can switch off informational booking emails (`preferences.bookingEmails`); invoices, payment receipts and
-security messages are always sent. `GET /bookings/:id/invoice/` downloads the PDF and
-`POST /bookings/:id/invoice/send/` emails it again. Admins can check the setup with `GET /mail/status/` and
-`POST /mail/test/`. Tests never use a real mail server.
+security messages are always sent. `GET /bookings/:id/invoice/` and `GET /bookings/:id/receipt/` download the PDFs
+and `POST /bookings/:id/invoice/send/` and `POST /bookings/:id/receipt/send/` email them again — both to the traveller
+**and** the host side of the booking. Every PDF carries the platform wordmark (`assets/word-logo.jpeg`). Admins can
+check the setup with `GET /mail/status/` and `POST /mail/test/`. Tests never use a real mail server.
 
 ## Booking lifecycle
 

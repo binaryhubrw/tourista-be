@@ -15,6 +15,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 # The seed runner reads these JSON snapshots at runtime (tsc does not copy them).
 COPY src/db/seed/data ./dist/db/seed/data
+# The platform wordmark printed on invoices and receipts.
+COPY assets ./assets
 # Uploaded photos live here; mount a persistent volume on it.
 RUN mkdir -p /app/uploads && chown -R node:node /app/uploads
 USER node

@@ -7,7 +7,7 @@ import { minDue, paymentTransfers, remainingDue } from '../domain/lifecycle.js';
 import { payoutAccount } from '../domain/payout.js';
 import { Business, User } from '../models/index.js';
 import { logger } from '../logger.js';
-import { buildInvoicePdf, invoiceNumber, invoiceState, type InvoiceHost } from '../providers/invoice.js';
+import { buildInvoicePdf, buildReceiptPdf, invoiceNumber, invoiceState, receiptNumber, type InvoiceHost } from '../providers/invoice.js';
 import { sendMail, type MailAttachment } from '../providers/mail.js';
 import { link, niceDate, niceDateTime, renderEmail, rwf, type EmailContent } from '../providers/emailTemplates.js';
 import { hostRecipients } from './hosts.js';
@@ -63,6 +63,12 @@ async function hostInfo(booking: any): Promise<InvoiceHost> {
 export async function invoiceAttachment(booking: any): Promise<MailAttachment> {
   const pdf = await buildInvoicePdf(booking, await hostInfo(booking));
   return { filename: `${invoiceNumber(booking)}.pdf`, content: pdf, contentType: 'application/pdf' };
+}
+
+/** The receipt for the payments made so far (partial or full). */
+export async function receiptAttachment(booking: any): Promise<MailAttachment> {
+  const pdf = await buildReceiptPdf(booking, await hostInfo(booking));
+  return { filename: `${receiptNumber(booking)}.pdf`, content: pdf, contentType: 'application/pdf' };
 }
 
 /** A photo we stored ourselves can be attached; anything else is linked instead. */
@@ -210,6 +216,7 @@ export const emailPaymentProof = (b: any) => safely('payment.proof', async () =>
   const latest = transfers[transfers.length - 1];
   if (!latest) return;
   const invoice = await invoiceAttachment(b);
+  const receipt = await receiptAttachment(b);
   const facts: [string, string][] = [
     ['Reference', ref(b)],
     ['Booking', b.targetName],
@@ -228,11 +235,11 @@ export const emailPaymentProof = (b: any) => safely('payment.proof', async () =>
     heading: 'We received your payment proof',
     paragraphs: [
       `Hello ${b.customerName}, we passed your transfer details to ${b.targetName}. Your booking is confirmed as soon as they see the money in their account.`,
-      'A copy of your payment record is attached as an invoice.',
+      'Your invoice and a receipt for this payment are attached.',
     ],
     facts: [...facts, ...proofLink],
     cta: { label: 'Track your booking', url: guestLink(b) },
-  }, 'payment.proof', [invoice]);
+  }, 'payment.proof', [invoice, receipt]);
 
   const hosts = await hostContacts(b);
   if (hosts.length) {
@@ -244,26 +251,28 @@ export const emailPaymentProof = (b: any) => safely('payment.proof', async () =>
       paragraphs: [
         `${b.customerName} says they sent ${rwf(latest.amountRwf)} for ${b.targetName}. Check your ${METHOD[latest.method] ?? 'account'}, then confirm that the money arrived.`,
         ...(screenshot ? ['Their screenshot is attached.'] : []),
+        'The invoice and a receipt for the payment are attached for your records.',
       ],
       facts: [...facts, ['Booking total', rwf(b.totalRwf)], ['Still to come', rwf(remainingDue(b))], ...proofLink],
       cta: { label: 'Confirm the payment', url: hostLink(b) },
-    }, 'payment.proof.host', [invoice, ...(screenshot ? [screenshot] : [])]);
+    }, 'payment.proof.host', [invoice, receipt, ...(screenshot ? [screenshot] : [])]);
   }
 });
 
-/** The host confirmed receipt: this is the invoice email. Always sent to the guest. */
+/** The host confirmed receipt: this is the invoice + receipt email. Always sent to the guest. */
 export const emailPaymentConfirmed = (b: any) => safely('payment.confirmed', async () => {
   const invoice = await invoiceAttachment(b);
+  const receipt = await receiptAttachment(b);
   const state = invoiceState(b);
   const left = remainingDue(b);
   send(b.customerEmail, {
     subject: `${state === 'PAID' ? 'Booking confirmed' : 'Payment received'}: ${b.targetName} (${ref(b)})`,
-    preheader: `Invoice ${invoiceNumber(b)} is attached.`,
+    preheader: `Invoice ${invoiceNumber(b)} and receipt ${receiptNumber(b)} are attached.`,
     heading: state === 'PAID' ? 'Your booking is confirmed' : 'Your payment was confirmed',
     paragraphs: [
       `Thank you, ${b.customerName}. ${b.targetName} confirmed your payment.`,
       left > 0 ? `Your dates are secured. ${rwf(left)} is still due, which you can send from your booking at any time.` : 'Your booking is paid in full.',
-      `Your invoice ${invoiceNumber(b)} is attached to this email.`,
+      `Your invoice ${invoiceNumber(b)} and receipt ${receiptNumber(b)} are attached to this email.`,
     ],
     facts: [
       ...bookingFacts(b),
@@ -274,17 +283,17 @@ export const emailPaymentConfirmed = (b: any) => safely('payment.confirmed', asy
     lines: bookingLinesOf(b),
     total: { label: 'Total', value: rwf(b.totalRwf) },
     cta: { label: 'View your booking', url: guestLink(b) },
-  }, 'payment.confirmed', [invoice]);
+  }, 'payment.confirmed', [invoice, receipt]);
 
   const hosts = await hostContacts(b);
   if (hosts.length) {
     send(hosts.map((h) => h.email), {
       subject: `Payment confirmed: ${b.customerName} · ${b.targetName} (${ref(b)})`,
       heading: 'Payment confirmed',
-      paragraphs: [`You confirmed ${rwf(b.payment?.amountRwf ?? 0)} from ${b.customerName}. The invoice is attached for your records.`],
+      paragraphs: [`You confirmed ${rwf(b.payment?.amountRwf ?? 0)} from ${b.customerName}. The invoice and a receipt are attached for your records.`],
       facts: [...bookingFacts(b), ['Balance due', rwf(left)]],
       cta: { label: 'Open the booking', url: hostLink(b) },
-    }, 'payment.confirmed.host', [invoice]);
+    }, 'payment.confirmed.host', [invoice, receipt]);
   }
 });
 
@@ -559,18 +568,38 @@ export const emailListingsHidden = (businesses: any[], reason?: string) => safel
   }
 });
 
-/** Re-sends the current invoice to the guest's address (the "email me my invoice again" button). */
-export async function emailInvoice(b: any) {
+/**
+ * Re-sends the current documents ("email me my invoice/receipt again"). Both go to the traveller and the
+ * host side of the booking, and both PDFs ride along on either request. Returns every address used.
+ */
+async function resendDocuments(b: any, kind: 'invoice.resend' | 'receipt.resend'): Promise<string[]> {
   const invoice = await invoiceAttachment(b);
+  const receipt = await receiptAttachment(b);
   const state = invoiceState(b);
-  send(b.customerEmail, {
-    subject: `Invoice ${invoiceNumber(b)} for ${b.targetName}`,
+  const hosts = await hostContacts(b);
+  const to = [b.customerEmail, ...hosts.map((h) => h.email)];
+  const isInvoice = kind === 'invoice.resend';
+  send(to, {
+    subject: isInvoice ? `Invoice ${invoiceNumber(b)} for ${b.targetName}` : `Receipt ${receiptNumber(b)} for ${b.targetName}`,
     preheader: `Status: ${state.toLowerCase()}.`,
-    heading: 'Your invoice',
-    paragraphs: [`Hello ${b.customerName}, your invoice for ${b.targetName} is attached. Status: ${state.toLowerCase()}.`],
+    heading: isInvoice ? 'Your invoice' : 'Your receipt',
+    paragraphs: [
+      `Hello ${b.customerName}, your invoice ${invoiceNumber(b)} and receipt ${receiptNumber(b)} for ${b.targetName} are attached. Status: ${state.toLowerCase()}.`,
+    ],
     facts: [...bookingFacts(b), ['Paid so far', rwf(b.payment?.amountRwf ?? 0)], ['Balance due', rwf(remainingDue(b))]],
     cta: { label: 'View your booking', url: guestLink(b) },
-  }, 'invoice.resend', [invoice]);
+  }, kind, [invoice, receipt]);
+  return to;
+}
+
+/** Re-sends the current invoice (with the receipt) to the traveller and the host. */
+export function emailInvoice(b: any) {
+  return resendDocuments(b, 'invoice.resend');
+}
+
+/** Re-sends the current receipt (with the invoice) to the traveller and the host. */
+export function emailReceipt(b: any) {
+  return resendDocuments(b, 'receipt.resend');
 }
 
 /** Used by the admin test-email endpoint. */
