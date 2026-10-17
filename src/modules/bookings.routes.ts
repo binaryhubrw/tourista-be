@@ -91,11 +91,14 @@ bookingsRouter.post('/', requireRole('tourist', 'business_owner', 'staff', 'admi
   res.status(201).json(await createBooking(body(req, bookingInput), req.user!));
 }));
 
-/** Invoice as a PDF: the guest, the host side of the booking, and admins. Available once any payment exists. */
+/**
+ * Invoice as a PDF: the guest, the host side of the booking, and admins. The invoice lists what
+ * was booked and the total price; it exists from the moment the booking is made and never changes
+ * with later payments (the receipt covers those).
+ */
 bookingsRouter.get('/:id/invoice/', ah(async (req, res) => {
   const doc = await Booking.findById(req.params.id).lean<any>();
   if (!doc || !(await canSee(doc, req.user!))) throw notFound('Booking');
-  if (!doc.payment) throw conflict('There is no payment on this booking yet, so there is no invoice.');
   const pdf = await invoiceAttachment(doc);
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `inline; filename="${pdf.filename}"`);
@@ -118,11 +121,10 @@ bookingsRouter.get('/:id/receipt/', ah(async (req, res) => {
 const lastInvoiceEmail = new Map<string, number>();
 const lastReceiptEmail = new Map<string, number>();
 
-/** Emails the current invoice and receipt to the traveller and the host. Limited to once a minute per booking. */
+/** Emails the invoice and receipt to the traveller and the host. Limited to once a minute per booking. */
 bookingsRouter.post('/:id/invoice/send/', ah(async (req, res) => {
   const doc = await Booking.findById(req.params.id).lean<any>();
   if (!doc || !(await canSee(doc, req.user!))) throw notFound('Booking');
-  if (!doc.payment) throw conflict('There is no payment on this booking yet, so there is no invoice.');
   const last = lastInvoiceEmail.get(doc._id) ?? 0;
   if (Date.now() - last < 60_000) throw tooMany('An invoice was just sent. Check your inbox, or try again in a minute.');
   lastInvoiceEmail.set(doc._id, Date.now());

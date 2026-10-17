@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { refundIsClosed, refundIsOpenForTraveller } from '../domain/lifecycle.js';
+import { cancellationTier, daysBeforeCheckIn, refundIsClosed, refundIsOpenForTraveller, refundableRwf } from '../domain/lifecycle.js';
 import { Booking, Refund } from '../models/index.js';
 import { ah } from '../utils/async.js';
 import { conflict, forbidden, notFound, unprocessable } from '../utils/errors.js';
@@ -14,7 +14,7 @@ import { hostListingIds, hostRecipients } from './hosts.js';
 import { adminIds, notify } from './notifications.service.js';
 import { invalidateSearchIndex } from './search.service.js';
 import { nonEmpty } from './common.js';
-import { emailRefundApproved, emailRefundCompleted, emailRefundRejected, emailRefundRequested } from './emails.service.js';
+import { emailRefundCompleted, emailRefundRequested } from './emails.service.js';
 
 const method = z.enum(['card', 'mtn', 'airtel']);
 
@@ -35,8 +35,6 @@ export const refundCompleteInput = z.object({
   senderAddress: z.string().trim().max(200).default(''),
   proof: nonEmpty('A screenshot or receipt of the transfer', 25_000_000),
 });
-
-const noteInput = z.object({ note: z.string().trim().max(1000).optional() });
 
 const step = (actor: AuthUser, action: string, note?: string, proof?: string) => ({
   at: new Date().toISOString(), by: actor.name, role: actor.role, action,
@@ -79,8 +77,22 @@ refundsRouter.post('/', requireRole('tourist', 'business_owner', 'staff'), persi
   if (booking.payment?.status !== 'Paid') throw unprocessable('Only a confirmed payment can be refunded.');
   const open = await Refund.exists({ bookingId: booking._id, status: { $nin: ['completed', 'rejected', 'canceled'] } });
   if (open) throw conflict('A refund is already in progress.');
-  const amount = input.amountRwf ?? booking.payment.amountRwf;
-  if (amount < 1 || amount > booking.payment.amountRwf) throw unprocessable('Refund amount must be between 1 RWF and what you paid.');
+  // The cancellation schedule decides the amount: a share of the booking total
+  // by days before check-in, capped at what the traveller actually paid. The
+  // platform's 10% subscription fee is never refunded.
+  const paid = booking.payment.amountRwf ?? 0;
+  const days = daysBeforeCheckIn(booking);
+  const tier = cancellationTier(days);
+  const refundable = refundableRwf(booking);
+  if (refundable < 1) {
+    throw unprocessable(
+      days === 0
+        ? 'Check-in is today, so no refund is due under the cancellation policy.'
+        : `No refund is due: check-in is in ${days} day${days === 1 ? '' : 's'}, and cancellations less than 10 days before check-in are not refunded.`,
+    );
+  }
+  const amount = input.amountRwf ?? refundable;
+  if (amount < 1 || amount > refundable) throw unprocessable(`The refund due on this booking is ${refundable.toLocaleString('en-US')} RWF or less under the cancellation policy.`);
 
   const now = new Date().toISOString();
   const refund = {
@@ -88,20 +100,23 @@ refundsRouter.post('/', requireRole('tourist', 'business_owner', 'staff'), persi
     paymentId: booking.payment.id ?? booking._id,
     bookingId: booking._id,
     amountRwf: amount,
-    status: 'admin_review',
+    status: 'returning',
     reason: input.reason,
+    policy: { daysBefore: days, chargeRate: tier.chargeRate, refundRate: tier.refundRate, label: tier.label },
     ...(input.proof ? { travelerProof: input.proof } : {}),
     receiveMethod: input.receiveMethod,
     receiveAccount: input.receiveAccount,
     receiveName: input.receiveName,
-    steps: [step(req.user!, 'Requested a refund', input.reason, input.proof)],
+    steps: [
+      step(req.user!, 'Requested a refund', input.reason, input.proof),
+      step(req.user!, `Cancellation policy applied: ${(tier.refundRate * 100).toFixed(0)}% refund — ${tier.label}.`, `${days} day${days === 1 ? '' : 's'} before check-in · charged ${Math.round(booking.totalRwf * tier.chargeRate).toLocaleString('en-US')} of ${booking.totalRwf.toLocaleString('en-US')} RWF.`),
+    ],
     createdAt: now,
   };
   await Refund.create(refund);
   await Booking.updateOne({ _id: booking._id }, { $set: { status: 'RefundPending', 'payment.ledger': 'refund_requested' } });
   invalidateSearchIndex();
-  await notify(await adminIds(), { kind: 'refund', title: 'Refund needs a decision', body: `${booking.customerName} asked for a refund on ${booking.targetName}.`, path: `/refunds/${refund._id}` });
-  await notify(await hostRecipients(booking), { kind: 'refund', title: 'Refund requested', body: `${booking.customerName} asked for a refund on ${booking.targetName}. Admin will review it first.`, path: `/refunds/${refund._id}` });
+  await notify(await hostRecipients(booking), { kind: 'refund', title: 'Send the refund to the traveller', body: `${booking.customerName} asked for a refund of ${amount.toLocaleString('en-US')} RWF on ${booking.targetName}. Send it to their account and upload your receipt.`, path: `/refunds/${refund._id}` });
   await emailRefundRequested(refund, booking);
   res.status(201).json(toDto(refund));
 }));
@@ -110,44 +125,11 @@ refundsRouter.get('/:id/', ah(async (req, res) => {
   res.json(toDto((await loadVisible(req.params.id, req.user!)).refund));
 }));
 
-/** Admin approves: the host is now asked to send the money back. */
-refundsRouter.post('/:id/approve/', requireRole('admin'), ah(async (req, res) => {
-  const { note } = body(req, noteInput);
-  const { refund, booking } = await loadVisible(req.params.id, req.user!);
-  if (!refundIsOpenForTraveller(refund.status)) throw conflict('This refund is not waiting for a decision.');
-  const updated = await Refund.findOneAndUpdate(
-    { _id: refund._id, status: refund.status },
-    { $set: { status: 'returning' }, $push: { steps: step(req.user!, 'Admin approved the refund. The host will return the money.', note) } },
-    { new: true },
-  ).lean<any>();
-  if (!updated) throw conflict('This refund changed. Refresh and try again.');
-  await notify(await hostRecipients(booking), { kind: 'refund', title: 'Send the refund to the guest', body: `Admin approved a refund of ${updated.amountRwf.toLocaleString('en-US')} RWF for ${booking.customerName}. Send it and upload your receipt.`, path: `/refunds/${updated._id}` });
-  await notify([booking.userId], { kind: 'refund', title: 'Refund approved', body: `Admin approved your refund for ${booking.targetName}. The host will send the money back.`, path: `/refunds/${updated._id}` });
-  await emailRefundApproved(updated, booking);
-  res.json(toDto(updated));
-}));
-
-refundsRouter.post('/:id/reject/', requireRole('admin'), ah(async (req, res) => {
-  const { note } = body(req, noteInput);
-  const { refund, booking } = await loadVisible(req.params.id, req.user!);
-  if (!refundIsOpenForTraveller(refund.status)) throw conflict('This refund is not waiting for a decision.');
-  const updated = await Refund.findOneAndUpdate(
-    { _id: refund._id, status: refund.status },
-    { $set: { status: 'rejected' }, $push: { steps: step(req.user!, 'Admin rejected the refund.', note) } },
-    { new: true },
-  ).lean<any>();
-  if (!updated) throw conflict('This refund changed. Refresh and try again.');
-  await Booking.updateOne({ _id: booking._id, status: 'RefundPending' }, { $set: { status: 'Confirmed', 'payment.ledger': 'approved' } });
-  await notify([booking.userId], { kind: 'refund', title: 'Refund rejected', body: `Your refund request for ${booking.targetName} was rejected.${note ? ` ${note}` : ''}`, path: `/refunds/${updated._id}` });
-  await emailRefundRejected(updated, booking, note);
-  res.json(toDto(updated));
-}));
-
 /** The host (or their staff) records the transfer that returns the money to the traveller. */
 refundsRouter.post('/:id/complete/', requireRole('business_owner', 'staff'), persistImages, ah(async (req, res) => {
   const input = body(req, refundCompleteInput);
   const { refund, booking } = await loadVisible(req.params.id, req.user!);
-  if (refund.status !== 'returning') throw conflict('Admin must approve this refund first.');
+  if (refund.status !== 'returning') throw conflict('This refund is not waiting for the host to return the money.');
   if (!refund.receiveAccount || !refund.receiveName) throw unprocessable('This refund has no traveller account to send to.');
   const sentAt = new Date().toISOString();
   const returnTransfer = {
@@ -172,7 +154,7 @@ refundsRouter.post('/:id/complete/', requireRole('business_owner', 'staff'), per
   res.json(toDto(updated));
 }));
 
-/** The traveller withdraws a request that is still waiting for admin. */
+/** The traveller withdraws a request the host has not sent back yet. */
 refundsRouter.post('/:id/cancel/', requireRole('tourist', 'business_owner', 'staff'), ah(async (req, res) => {
   const { refund, booking } = await loadVisible(req.params.id, req.user!);
   if (booking.userId !== req.user!.id) throw forbidden('Only the traveller can cancel this refund.');

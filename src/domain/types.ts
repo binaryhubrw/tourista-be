@@ -330,6 +330,8 @@ export interface Refund {
   receiveName?: string;
   /** Host transfer that completed the refund. */
   returnTransfer?: RefundReturn;
+  /** Cancellation schedule the amount was computed from. */
+  policy?: { daysBefore: number; chargeRate: number; refundRate: number; label: string };
   steps: RefundStep[];
 }
 

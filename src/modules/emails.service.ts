@@ -324,6 +324,14 @@ export const emailBookingCanceled = (b: any, canceledByGuest: boolean) => safely
 
 const refundFacts = (r: any, b: any): [string, string][] => [
   ['Booking', `${b.targetName} (${ref(b)})`],
+  ['Booking total', rwf(b.totalRwf)],
+  ...(r.policy ? [[
+    `Cancelled ${r.policy.daysBefore} day${r.policy.daysBefore === 1 ? '' : 's'} before check-in`,
+    r.policy.label,
+  ] as [string, string], [
+    'Cancellation charge',
+    `${Math.round(r.policy.chargeRate * 100)}% (${rwf(Math.round(b.totalRwf * r.policy.chargeRate))})`,
+  ] as [string, string]] : []),
   ['Refund amount', rwf(r.amountRwf)],
   ['Refund to', `${METHOD[r.receiveMethod] ?? ''} ${r.receiveAccount ?? ''} (${r.receiveName ?? ''})`.trim()],
 ];
@@ -334,66 +342,29 @@ export const emailRefundRequested = (r: any, b: any) => safely('refund.requested
     send(b.customerEmail, {
       subject: `Refund request received (${ref(b)})`,
       heading: 'We received your refund request',
-      paragraphs: ['An admin reviews every refund first. If it is approved, the host sends the money back to the account you gave us.', `Your reason: ${r.reason}`],
+      paragraphs: [
+        `We sent your request to ${b.targetName}. They send the money back to the account you gave us and upload a receipt of the transfer.`,
+        ...(r.policy ? [`Your refund follows our cancellation schedule: ${r.policy.label}, ${(r.policy.refundRate * 100).toFixed(0)}% of the booking total. Tourista's 10% subscription fee is not refunded.`] : []),
+        `Your reason: ${r.reason}`,
+      ],
       facts: refundFacts(r, b),
       cta: { label: 'Track your refund', url: link(`/dashboard/refunds/${r._id ?? r.id}`) },
     }, 'refund.requested');
   }
-  const admins = await adminContacts();
-  if (admins.length) {
-    send(admins.map((a) => a.email), {
-      subject: `Refund needs a decision: ${b.customerName} · ${b.targetName}`,
-      heading: 'A refund is waiting for you',
-      paragraphs: [`${b.customerName} asked for a refund.`, `Reason: ${r.reason}`, ...(proof ? ['Their evidence is attached.'] : [])],
-      facts: refundFacts(r, b),
-      cta: { label: 'Review the refund', url: link(`/admin/refunds/${r._id ?? r.id}`) },
-    }, 'refund.requested.admin', proof ? [proof] : undefined);
-  }
-  const hosts = await hostContacts(b);
-  if (hosts.length) {
-    send(hosts.map((h) => h.email), {
-      subject: `Refund requested on ${b.targetName} (${ref(b)})`,
-      heading: 'A guest asked for a refund',
-      paragraphs: [`${b.customerName} asked for a refund. Admin reviews it first; you only act if it is approved.`, `Reason: ${r.reason}`],
-      facts: refundFacts(r, b),
-      cta: { label: 'Open the refund', url: link(`/business-dashboard/refunds/${r._id ?? r.id}`) },
-    }, 'refund.requested.host');
-  }
-});
-
-export const emailRefundApproved = (r: any, b: any) => safely('refund.approved', async () => {
   const hosts = await hostContacts(b, false); // the host has to act on this one
   if (hosts.length) {
     send(hosts.map((h) => h.email), {
       subject: `Send the refund to ${b.customerName} (${ref(b)})`,
-      heading: 'Admin approved a refund: please send it',
+      heading: 'A guest asked for a refund: please send it',
       paragraphs: [
-        `Send ${rwf(r.amountRwf)} to the account below, then upload your receipt in the refund so the guest and admin can see it.`,
+        `${b.customerName} asked for a refund of ${rwf(r.amountRwf)}. Send it to the account below, then upload your receipt in the refund so the guest and admin can see it.`,
+        `Their reason: ${r.reason}`,
+        ...(proof ? ['Their evidence is attached.'] : []),
       ],
-      facts: [...refundFacts(r, b), ...(r.steps?.length ? [['Admin note', r.steps[r.steps.length - 1].note ?? '—'] as [string, string]] : [])],
-      cta: { label: 'Complete the refund', url: link(`/business-dashboard/refunds/${r._id ?? r.id}`) },
-    }, 'refund.approved.host');
-  }
-  if (await guestWants(b)) {
-    send(b.customerEmail, {
-      subject: `Your refund was approved (${ref(b)})`,
-      heading: 'Your refund was approved',
-      paragraphs: [`${b.targetName} will now send ${rwf(r.amountRwf)} to the account you gave us. We will email you again once it is sent.`],
       facts: refundFacts(r, b),
-      cta: { label: 'Track your refund', url: link(`/dashboard/refunds/${r._id ?? r.id}`) },
-    }, 'refund.approved');
+      cta: { label: 'Complete the refund', url: link(`/business-dashboard/refunds/${r._id ?? r.id}`) },
+    }, 'refund.requested.host', proof ? [proof] : undefined);
   }
-});
-
-export const emailRefundRejected = (r: any, b: any, note?: string) => safely('refund.rejected', async () => {
-  if (!(await guestWants(b))) return;
-  send(b.customerEmail, {
-    subject: `Your refund request was not approved (${ref(b)})`,
-    heading: 'Your refund was not approved',
-    paragraphs: [`Hello ${b.customerName}, your refund request for ${b.targetName} was not approved.`, ...(note ? [`Note from admin: ${note}`] : []), 'Your booking stays confirmed.'],
-    facts: refundFacts(r, b),
-    cta: { label: 'View your booking', url: guestLink(b) },
-  }, 'refund.rejected');
 });
 
 export const emailRefundCompleted = (r: any, b: any) => safely('refund.completed', async () => {
@@ -405,7 +376,7 @@ export const emailRefundCompleted = (r: any, b: any) => safely('refund.completed
     heading: 'Your refund was sent',
     paragraphs: [
       `${b.targetName} sent ${rwf(r.amountRwf)} to ${r.receiveAccount}. It should be in your account shortly.`,
-      'The host’s transfer receipt and an updated invoice are attached.',
+      'The host’s transfer receipt and your invoice are attached.',
     ],
     facts: [
       ...refundFacts(r, b),
@@ -575,16 +546,18 @@ export const emailListingsHidden = (businesses: any[], reason?: string) => safel
 async function resendDocuments(b: any, kind: 'invoice.resend' | 'receipt.resend'): Promise<string[]> {
   const invoice = await invoiceAttachment(b);
   const receipt = await receiptAttachment(b);
-  const state = invoiceState(b);
   const hosts = await hostContacts(b);
   const to = [b.customerEmail, ...hosts.map((h) => h.email)];
   const isInvoice = kind === 'invoice.resend';
   send(to, {
     subject: isInvoice ? `Invoice ${invoiceNumber(b)} for ${b.targetName}` : `Receipt ${receiptNumber(b)} for ${b.targetName}`,
-    preheader: `Status: ${state.toLowerCase()}.`,
+    preheader: isInvoice ? 'What was booked and the total price.' : 'The payments confirmed for this booking.',
     heading: isInvoice ? 'Your invoice' : 'Your receipt',
     paragraphs: [
-      `Hello ${b.customerName}, your invoice ${invoiceNumber(b)} and receipt ${receiptNumber(b)} for ${b.targetName} are attached. Status: ${state.toLowerCase()}.`,
+      isInvoice
+        ? `Hello ${b.customerName}, your invoice ${invoiceNumber(b)} for ${b.targetName} is attached. It lists what was booked and the total price.`
+        : `Hello ${b.customerName}, your receipt ${receiptNumber(b)} for ${b.targetName} is attached. It records the payments confirmed so far.`,
+      'The invoice and the receipt are both attached.',
     ],
     facts: [...bookingFacts(b), ['Paid so far', rwf(b.payment?.amountRwf ?? 0)], ['Balance due', rwf(remainingDue(b))]],
     cta: { label: 'View your booking', url: guestLink(b) },

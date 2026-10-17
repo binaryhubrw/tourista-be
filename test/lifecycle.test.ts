@@ -178,17 +178,21 @@ describe('refunds', () => {
     bookingId, reason: 'Plans changed', receiveMethod: 'mtn', receiveAccount: '+250 788 000 111', receiveName: 'Amani Kayitesi', ...extra,
   });
 
-  it('runs request → admin approval → host return → refunded, and feeds the fee ledger', async () => {
-    const b = await paidBooking();
+  it('prices the refund by the cancellation schedule and runs request → host return → refunded', async () => {
+    const b = await paidBooking(); // one night, 100,000, check-in 100+ days out
     expect((await http.post('/refunds/', refundBody(b.id), 'other')).status).toBe(404);
     expect((await http.post('/refunds/', refundBody('bk-nope0000'), 'tourist')).status).toBe(404);
-    const created = await http.post('/refunds/', refundBody(b.id, { amountRwf: 999_999_999 }), 'tourist');
-    expect(created.status).toBe(422);
+    // The schedule caps the amount: asking for more than the tier allows is refused, not silently trimmed.
+    const tooMuch = await http.post('/refunds/', refundBody(b.id, { amountRwf: 999_999_999 }), 'tourist');
+    expect(tooMuch.status).toBe(422);
+    expect(tooMuch.body.message).toMatch(/cancellation policy/);
 
     const refund = await http.post('/refunds/', refundBody(b.id, { proof: 'https://example.com/p.jpg' }), 'tourist');
     expect(refund.status).toBe(201);
-    expect(refund.body).toMatchObject({ status: 'admin_review', bookingId: b.id, amountRwf: b.payment.amountRwf });
-    expect(refund.body.steps).toHaveLength(1);
+    // 20+ days before check-in: 90% of the total comes back.
+    expect(refund.body).toMatchObject({ status: 'returning', bookingId: b.id, amountRwf: 90_000, policy: { refundRate: 0.9, chargeRate: 0.1 } });
+    expect(refund.body.policy.daysBefore).toBeGreaterThanOrEqual(20);
+    expect(refund.body.steps).toHaveLength(2); // the request, and the schedule that priced it
     expect((await http.get(`/bookings/${b.id}/`, 'tourist')).body.status).toBe('RefundPending');
     expect((await http.post('/refunds/', refundBody(b.id), 'tourist')).status).toBe(409); // already in progress
     expect((await http.patch(`/bookings/${b.id}/`, { status: 'Canceled' }, 'owner')).status).toBe(409);
@@ -199,15 +203,10 @@ describe('refunds', () => {
     expect((await http.get(`/refunds/${refund.body.id}/`, 'other')).status).toBe(404);
     expect((await http.get('/refunds/', 'admin')).body.some((r: any) => r.id === refund.body.id)).toBe(true);
     expect((await http.get('/refunds/', 'rival')).body.some((r: any) => r.id === refund.body.id)).toBe(false);
+    expect((await http.post(`/refunds/${refund.body.id}/approve/`, {}, 'admin')).status).toBe(404); // there is no approval step any more
 
-    // The host cannot complete before admin approves, and only admin can approve.
+    // The host returns the money straight away and records the transfer.
     const proof = { method: 'mtn', senderName: 'Claudine', senderAccount: '+250 788 123 401', proof: 'https://example.com/r.jpg' };
-    expect((await http.post(`/refunds/${refund.body.id}/complete/`, proof, 'owner')).status).toBe(409);
-    expect((await http.post(`/refunds/${refund.body.id}/approve/`, {}, 'owner')).status).toBe(403);
-    const approvedRefund = await http.post(`/refunds/${refund.body.id}/approve/`, { note: 'Looks right.' }, 'admin');
-    expect(approvedRefund.body.status).toBe('returning');
-    expect((await http.post(`/refunds/${refund.body.id}/cancel/`, {}, 'tourist')).status).toBe(409);
-
     const done = await http.post(`/refunds/${refund.body.id}/complete/`, proof, 'owner');
     expect(done.status).toBe(200);
     expect(done.body.status).toBe('completed');
@@ -217,28 +216,49 @@ describe('refunds', () => {
     expect(after.body).toMatchObject({ status: 'Refunded' });
     expect(after.body.payment).toMatchObject({ status: 'Refunded', ledger: 'refunded' });
 
+    // The 10% subscription fee stays with the platform: nothing is reversed.
     const fees = await http.get('/fees/', 'admin');
     expect(fees.status).toBe(200);
     expect(fees.body.rate).toBe(0.1);
-    expect(fees.body.wallet.some((w: any) => w.kind === 'out' && w.bookingId === b.id)).toBe(true);
-    expect(fees.body.totals.balanceRwf).toBe(fees.body.totals.earnedRwf - fees.body.totals.reversedRwf);
+    expect(fees.body.wallet.some((w: any) => w.kind === 'out' && w.bookingId === b.id)).toBe(false);
+    expect(fees.body.totals.reversedRwf).toBe(0);
+    expect(fees.body.totals.balanceRwf).toBe(fees.body.totals.earnedRwf);
     expect((await http.get('/fees/', 'owner')).status).toBe(403);
   });
 
-  it('lets admin reject (booking returns to Confirmed) and the guest withdraw', async () => {
+  it('lets the traveller withdraw before the money is sent, and request again afterwards', async () => {
     const a = await paidBooking();
     const r1 = await http.post('/refunds/', refundBody(a.id), 'tourist');
-    const rejected = await http.post(`/refunds/${r1.body.id}/reject/`, { note: 'Outside the policy.' }, 'admin');
-    expect(rejected.body.status).toBe('rejected');
+    expect(r1.body.status).toBe('returning');
+    const withdrawn = await http.post(`/refunds/${r1.body.id}/cancel/`, {}, 'tourist'); // allowed until the host has sent the money
+    expect(withdrawn.body.status).toBe('canceled');
     expect((await http.get(`/bookings/${a.id}/`, 'tourist')).body.status).toBe('Confirmed');
-    const guestInbox = (await http.get('/notifications/', 'tourist')).body as any[];
-    expect(guestInbox.some((n) => n.title === 'Refund rejected')).toBe(true);
+    expect((await http.post(`/refunds/${r1.body.id}/cancel/`, {}, 'tourist')).status).toBe(409); // already closed
 
     const r2 = await http.post('/refunds/', refundBody(a.id), 'tourist'); // a new request is allowed after a closed one
     expect(r2.status).toBe(201);
-    const withdrawn = await http.post(`/refunds/${r2.body.id}/cancel/`, {}, 'tourist');
-    expect(withdrawn.body.status).toBe('canceled');
-    expect((await http.get(`/bookings/${a.id}/`, 'tourist')).body.status).toBe('Confirmed');
+    const done = await http.post(`/refunds/${r2.body.id}/complete/`, { method: 'mtn', senderName: 'Claudine', senderAccount: '+250 788 123 401', proof: 'https://example.com/r.jpg' }, 'owner');
+    expect(done.body.status).toBe('completed');
+    expect((await http.get(`/bookings/${a.id}/`, 'tourist')).body.status).toBe('Refunded');
+    // A completed refund can no longer be canceled or completed again.
+    expect((await http.post(`/refunds/${r2.body.id}/cancel/`, {}, 'tourist')).status).toBe(409);
+    expect((await http.post(`/refunds/${r2.body.id}/complete/`, { method: 'mtn', senderName: 'C', senderAccount: 'x', proof: 'https://example.com/r.jpg' }, 'owner')).status).toBe(409);
+  });
+
+  it('charges nothing back inside 10 days of check-in', async () => {
+    const near = await http.post('/bookings/', {
+      ...guest, targetId: hotelId, targetType: 'business', businessId: hotelId, serviceId: roomId, units: 1, date: day(5), endDate: day(6), people: 2,
+    }, 'tourist');
+    expect(near.status).toBe(201);
+    await http.post(`/bookings/${near.body.id}/decision/`, { approve: true }, 'owner');
+    await http.post(`/bookings/${near.body.id}/pay/`, transfer(), 'tourist');
+    const paid = await http.post(`/bookings/${near.body.id}/confirm-payment/`, {}, 'owner');
+    expect(paid.body.payment.status).toBe('Paid');
+
+    const res = await http.post('/refunds/', refundBody(near.body.id), 'tourist');
+    expect(res.status).toBe(422);
+    expect(res.body.message).toMatch(/No refund is due/);
+    expect((await http.get(`/bookings/${near.body.id}/`, 'tourist')).body.status).toBe('Confirmed'); // untouched
   });
 
   it('only allows refunds on paid bookings', async () => {

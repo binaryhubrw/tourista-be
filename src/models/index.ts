@@ -305,6 +305,10 @@ const refundSchema = new Schema({
     method: str(), senderName: str(), senderAccount: str(), senderAddress: str(),
     proof: str(), sentTo: str(), sentToName: str(), sentAt: str(), reference: str(),
   }, { _id: false }),
+  /** Cancellation schedule the amount was computed from. */
+  policy: new Schema({
+    daysBefore: Number, chargeRate: Number, refundRate: Number, label: String,
+  }, { _id: false }),
   steps: [refundStepSchema],
   createdAt: str({ required: true }),
 }, opts);

@@ -221,7 +221,8 @@ describe('booking emails', () => {
 describe('invoices', () => {
   it('serves a PDF to people on the booking and refuses everyone else', async () => {
     const b = await request_();
-    expect((await http.get(`/bookings/${b.id}/invoice/`, 'tourist')).status).toBe(409); // nothing paid yet
+    expect((await http.get(`/bookings/${b.id}/invoice/`, 'tourist')).status).toBe(200); // it lists what was booked, so it exists before any payment
+    expect((await http.get(`/bookings/${b.id}/invoice/`)).status).toBe(401);
     await http.post(`/bookings/${b.id}/decision/`, { approve: true }, 'owner');
     await http.post(`/bookings/${b.id}/pay/`, transfer({ amountRwf: 60_000 }), 'tourist');
 
@@ -295,7 +296,7 @@ describe('receipts', () => {
 });
 
 describe('refund emails', () => {
-  it('keeps everyone informed through the refund', async () => {
+  it('tells the guest and the host when a refund is asked for and when it is sent', async () => {
     const b = await request_();
     await http.post(`/bookings/${b.id}/decision/`, { approve: true }, 'owner');
     await http.post(`/bookings/${b.id}/pay/`, transfer(), 'tourist');
@@ -308,23 +309,20 @@ describe('refund emails', () => {
     expect(refund.status).toBe(201);
     let mails = await sent();
     expect(mails.find((m) => m.kind === 'refund.requested')!.to).toEqual(['amani.guest@example.com']);
-    expect(mails.find((m) => m.kind === 'refund.requested.admin')!.to).toContain('admin@tourista.rw');
+    expect(mails.find((m) => m.kind === 'refund.requested')!.text).toMatch(/cancellation schedule/);
+    expect(mails.find((m) => m.kind === 'refund.requested')!.text).toMatch(/subscription fee is not refunded/);
     expect(mails.find((m) => m.kind === 'refund.requested.host')!.to).toContain('business@tourista.rw');
-
-    clearRecentMail();
-    await http.post(`/refunds/${refund.body.id}/approve/`, { note: 'OK' }, 'admin');
-    mails = await sent();
-    const hostMail = mails.find((m) => m.kind === 'refund.approved.host')!;
-    expect(hostMail.to).toContain('business@tourista.rw');
-    expect(hostMail.text).toMatch(/Refund to: MTN Mobile Money \+250 788 000 111/);
-    expect(mails.find((m) => m.kind === 'refund.approved')!.to).toEqual(['amani.guest@example.com']);
+    expect(mails.find((m) => m.kind === 'refund.requested.host')!.text).toMatch(/Refund to: MTN Mobile Money \+250 788 000 111/);
+    expect(mails.find((m) => m.kind === 'refund.requested.host')!.text).toMatch(/Cancellation charge: 10%/); // 20+ days before check-in
+    expect(mails.some((m) => m.kind.startsWith('refund.requested.admin'))).toBe(false); // admins are not part of the flow
 
     clearRecentMail();
     await http.post(`/refunds/${refund.body.id}/complete/`, { method: 'mtn', senderName: 'Claudine', senderAccount: '+250 788 123 401', proof: 'https://example.com/receipt.jpg' }, 'owner');
-    const done = (await sent('refund.completed'))[0];
+    mails = await sent();
+    const done = mails.find((m) => m.kind === 'refund.completed')!;
     expect(done.to).toEqual(['amani.guest@example.com']);
     expect(done.attachments.some((a) => a.filename.startsWith('INV-'))).toBe(true);
-    expect(done.text).toMatch(/Refund amount: RWF 100,000/);
+    expect(done.text).toMatch(/Refund amount: RWF 90,000/); // 90% of the 100,000 total at 20+ days
   });
 });
 
