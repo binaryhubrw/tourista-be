@@ -80,7 +80,6 @@ refundsRouter.post('/', requireRole('tourist', 'business_owner', 'staff'), persi
   // The cancellation schedule decides the amount: a share of the booking total
   // by days before check-in, capped at what the traveller actually paid. The
   // platform's 10% subscription fee is never refunded.
-  const paid = booking.payment.amountRwf ?? 0;
   const days = daysBeforeCheckIn(booking);
   const tier = cancellationTier(days);
   const refundable = refundableRwf(booking);

@@ -314,7 +314,7 @@ describe('refund emails', () => {
     expect(mails.find((m) => m.kind === 'refund.requested.host')!.to).toContain('business@tourista.rw');
     expect(mails.find((m) => m.kind === 'refund.requested.host')!.text).toMatch(/Refund to: MTN Mobile Money \+250 788 000 111/);
     expect(mails.find((m) => m.kind === 'refund.requested.host')!.text).toMatch(/Cancellation charge: 10%/); // 20+ days before check-in
-    expect(mails.some((m) => m.kind.startsWith('refund.requested.admin'))).toBe(false); // admins are not part of the flow
+    expect(mails.some((m) => m.kind?.startsWith('refund.requested.admin'))).toBe(false); // admins are not part of the flow
 
     clearRecentMail();
     await http.post(`/refunds/${refund.body.id}/complete/`, { method: 'mtn', senderName: 'Claudine', senderAccount: '+250 788 123 401', proof: 'https://example.com/receipt.jpg' }, 'owner');
