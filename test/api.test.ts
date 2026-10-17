@@ -234,7 +234,35 @@ describe('bookings', () => {
     expect(ownerList.body.every((b: any) => ownIds.has(b.businessId))).toBe(true);
     const all = await http.get('/bookings/', 'admin');
     expect(all.body.length).toBeGreaterThan(ownerList.body.length);
-    expect((await http.post('/bookings/', {}, 'owner')).status).toBe(403);
+  });
+
+  it('lets an owner book as a traveller, but never their own business', async () => {
+    const all = (await http.get('/businesses/')).body as any[];
+    const foreign = all.find((b) => b.ownerId && b.ownerId !== 'user-business-1' && b.services?.some((s: any) => s.unit === 'per night'));
+    expect(foreign).toBeTruthy();
+    const foreignRoom = foreign.services.find((s: any) => s.unit === 'per night');
+
+    const abroad = await http.post('/bookings/', {
+      ...customer, targetId: foreign.id, targetType: 'business', businessId: foreign.id,
+      serviceId: foreignRoom.id, units: 1, date: futureDate(300), endDate: futureDate(301), people: 1,
+    }, 'owner');
+    expect(abroad.status).toBe(201);
+    expect(abroad.body).toMatchObject({ status: 'Pending', userId: 'user-business-1' });
+
+    // The same owner cannot book a room on their own listing (403, not a silent booking).
+    const own = await http.post('/bookings/', {
+      ...customer, targetId: biz, targetType: 'business', businessId: biz,
+      serviceId: roomId, units: 1, date: futureDate(300), endDate: futureDate(301), people: 1,
+    }, 'owner');
+    expect(own.status).toBe(403);
+
+    // The business list still hides their travel bookings; `scope=traveller` shows them.
+    const hosting = await http.get('/bookings/', 'owner');
+    expect(hosting.body.some((b: any) => b.id === abroad.body.id)).toBe(false);
+    const travelling = await http.get('/bookings/?scope=traveller', 'owner');
+    expect(travelling.body.every((b: any) => b.userId === 'user-business-1')).toBe(true);
+    expect(travelling.body.some((b: any) => b.id === abroad.body.id)).toBe(true);
+    expect((await http.get('/bookings/?scope=traveller', 'tourist')).body.every((b: any) => b.userId === 'user-tourist-1')).toBe(true);
   });
 
   it('never oversells the last unit under concurrency', async () => {
@@ -460,7 +488,7 @@ describe('admin moderation', () => {
     }, 'admin');
     expect(created.status).toBe(201);
     const id = created.body.id;
-    expect((await http.get(`/businesses/${id}/`)).status).toBe(200);
+    expect((await http.get(`/businesses/${id}/`, 'admin')).status).toBe(200);
 
     // Only admins may delete a listing.
     expect((await http.del(`/businesses/${id}/`, 'owner')).status).toBe(403);

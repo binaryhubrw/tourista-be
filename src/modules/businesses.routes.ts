@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { BADGES, BUSINESS_CATEGORIES, LISTING_KINDS, OFFERING_GROUPS, PROPERTY_TYPES, vehiclePlates } from '../domain/catalog.js';
+import { trackBackground } from '../providers/mail.js';
 import { Business, Location, User } from '../models/index.js';
 import { ah } from '../utils/async.js';
 import { conflict, forbidden, notFound, unprocessable } from '../utils/errors.js';
@@ -9,11 +10,11 @@ import { toDto, toDtos } from '../utils/dto.js';
 import { authenticate, optionalAuth, requireRole } from '../middleware/auth.js';
 import { body, provided, query } from '../middleware/validate.js';
 import { persistImages } from '../middleware/persistImages.js';
-import { bulk, coordinates, money, nonEmpty } from './common.js';
+import { bulk, coordinates, money, nonEmpty, trimmed } from './common.js';
 import { invalidateSearchIndex } from './search.service.js';
 import { APPROVED_FILTER, canSeeListing, visibleListings } from './listingVisibility.js';
 import { adminIds, notify } from './notifications.service.js';
-import { emailListingDecision, emailListingSubmitted } from './emails.service.js';
+import { emailListingDecision, emailListingSubmitted, emailListingsHidden } from './emails.service.js';
 
 const serviceInput = z.object({
   id: z.string().trim().min(1).max(80).optional(),
@@ -106,10 +107,8 @@ async function prepareNew(input: BusinessInput, actor: { id: string; role: strin
     data.ownerName = await ownerName(ownerId);
   }
   const now = new Date().toISOString();
-  // Admins publish immediately; everything an owner creates waits for an admin.
-  const approval = actor.role === 'admin'
-    ? { approvalStatus: 'approved', reviewedAt: now, reviewedBy: actor.id }
-    : { approvalStatus: 'pending', submittedAt: now };
+  // Every new listing waits for an admin review before it goes live, whoever created it.
+  const approval = { approvalStatus: 'pending', submittedAt: now };
   return { ...data, ...approval, _id: newId('biz'), rating: 0, reviewCount: 0, createdAt: now };
 }
 
@@ -155,8 +154,8 @@ businessesRouter.post('/', authenticate, requireRole('business_owner', 'admin'),
   const created = await Business.create(await prepareNew(body(req, businessInput), req.user!));
   invalidateSearchIndex();
   res.status(201).json(toDto(created.toObject(), ['bookingSeq']));
-  // Notice admins after the owner already has a success response. A slow or failed email must not leave Submit spinning or turn a saved branch into an error.
-  if (created.approvalStatus === 'pending') void announceSubmission(created.toObject()).catch(() => undefined);
+  // Notice admins after the owner already has a success response. A slow or failed email must not leave Submit spinning or turn a saved branch into an error. Admins creating a listing skip this, they see it in the review queue already.
+  if (req.user!.role !== 'admin') trackBackground(announceSubmission(created.toObject())).catch(() => undefined);
 }));
 
 businessesRouter.get('/:id/payout/', authenticate, ah(async (req, res) => {
@@ -215,11 +214,23 @@ businessesRouter.post('/:id/reject/', authenticate, requireRole('admin'), ah(asy
 
 /** Admin hides a live listing from travellers (or brings it back) without rejecting it. */
 businessesRouter.patch('/:id/active/', authenticate, requireRole('admin'), ah(async (req, res) => {
-  const { active } = body(req, z.object({ active: z.boolean() }));
+  const { active, reason } = body(req, z.object({ active: z.boolean(), reason: trimmed(500).optional() }));
   const doc = await Business.findByIdAndUpdate(req.params.id, { $set: { active } }, { new: true }).lean<any>();
   if (!doc) throw notFound('Business');
   invalidateSearchIndex();
+  if (!active) await emailListingsHidden([doc], reason);
   res.json(toDto(doc, ['bookingSeq']));
+}));
+
+/** Admin hides or restores several listings at once (one company across its branches). One email per owner. */
+businessesRouter.patch('/active/', authenticate, requireRole('admin'), ah(async (req, res) => {
+  const { ids, active, reason } = body(req, z.object({ ids: z.array(z.string()).min(1), active: z.boolean(), reason: trimmed(500).optional() }));
+  const docs = await Business.find({ _id: { $in: ids } }).lean<any[]>();
+  if (!docs.length) throw notFound('Business');
+  await Business.updateMany({ _id: { $in: ids } }, { $set: { active } });
+  invalidateSearchIndex();
+  if (!active) await emailListingsHidden(docs, reason);
+  res.json(docs.map((doc) => toDto({ ...doc, active }, ['bookingSeq'])));
 }));
 
 /** Admin removes a company branch for good. Bookings and reviews keep their stored copy of the name. */

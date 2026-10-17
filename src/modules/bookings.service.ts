@@ -319,7 +319,6 @@ export async function sendPaymentReminders(now = new Date()) {
 // ------------------------------------------------------------- commands ----
 
 export async function createBooking(input: BookingInputT, actor: Actor) {
-  if (isHostRole(actor.role)) throw forbidden('Business accounts cannot make bookings. Use a traveller account.');
   if (input.payment && actor.role !== 'admin') {
     throw unprocessable('Send your booking request first. You pay the host after they approve it.');
   }
@@ -333,12 +332,16 @@ export async function createBooking(input: BookingInputT, actor: Actor) {
     userId = u._id;
     customer = { name: input.customerName || u.name, email: input.customerEmail || u.email, phone: input.customerPhone || u.phone || '' };
   }
-  if (actor.role === 'tourist' && input.customerPhone.replace(/\D/g, '').length < 9) {
+  if (actor.role !== 'admin' && input.customerPhone.replace(/\D/g, '').length < 9) {
     throw badRequest('Enter a phone number with at least 9 digits.');
   }
 
   const bookingId = newBookingId();
   const target = await resolveTarget(input.targetType, input.targetId);
+  // Hosts may book as travellers, but never their own business (owner) or one they are assigned to (staff).
+  if (isHostRole(actor.role) && target.businessId && (await hostListingIds(actor)).includes(target.businessId)) {
+    throw forbidden('You cannot book your own business. Use another traveller account.');
+  }
   const priced = price(input, target);
 
   let instant: Awaited<ReturnType<typeof instantPayment>> | undefined;
@@ -424,7 +427,7 @@ export async function decideBooking(id: string, approve: boolean, reason: string
 export async function submitPayment(id: string, input: PaymentInput, actor: Actor) {
   await expireStaleBookings();
   const existing = await Booking.findById(id).lean<any>();
-  if (!existing || !(await canSee(existing, actor)) || isHostRole(actor.role)) throw notFound('Booking');
+  if (!existing || !(await canSee(existing, actor)) || (isHostRole(actor.role) && existing.userId !== actor.id)) throw notFound('Booking');
 
   const first = !existing.payment;
   const open = first ? ['AwaitingPayment'] : ['AwaitingPayment', 'PaymentReview', 'Confirmed'];

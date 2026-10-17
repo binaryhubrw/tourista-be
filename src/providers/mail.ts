@@ -162,10 +162,22 @@ export function sendMail(mail: OutgoingMail) {
   pump();
 }
 
+/**
+ * Fire-and-forget work that may end up queuing mail (for example an email prepared after the HTTP
+ * response was already sent). Tracked so `flushMail` can wait for it too.
+ */
+const background = new Set<Promise<unknown>>();
+
+export function trackBackground<T>(work: Promise<T>): Promise<T> {
+  background.add(work);
+  void work.catch(() => undefined).finally(() => background.delete(work));
+  return work;
+}
+
 /** Resolves once everything queued so far has been delivered or has given up. Used by tests and shutdown. */
 export async function flushMail(timeoutMs = 30_000) {
   const deadline = Date.now() + timeoutMs;
-  while ((queue.length || active) && Date.now() < deadline) await sleep(5);
+  while ((queue.length || active || background.size) && Date.now() < deadline) await sleep(5);
 }
 
 /** Checks the SMTP login without sending anything. Safe to call at startup. */

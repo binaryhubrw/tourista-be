@@ -61,6 +61,13 @@ bookingsRouter.get('/', optionalAuth, ah(async (req, res) => {
     return res.json(await availability());
   }
   await expireStaleBookings();
+
+  // Owners and staff can reach their traveller bookings by asking for `scope=traveller`.
+  if (q.scope === 'traveller') {
+    const docs = await Booking.find({ userId: user.id }).sort({ createdAt: -1 }).lean<any[]>();
+    return res.json(docs.map(bookingDto));
+  }
+
   const filter: Record<string, any> = {};
   const requestedBiz = q.businessIds?.split(',').map((s) => s.trim()).filter(Boolean);
 
@@ -80,7 +87,7 @@ bookingsRouter.get('/', optionalAuth, ah(async (req, res) => {
 
 bookingsRouter.use(authenticate);
 
-bookingsRouter.post('/', requireRole('tourist', 'admin'), ah(async (req, res) => {
+bookingsRouter.post('/', requireRole('tourist', 'business_owner', 'staff', 'admin'), ah(async (req, res) => {
   res.status(201).json(await createBooking(body(req, bookingInput), req.user!));
 }));
 
@@ -128,7 +135,8 @@ bookingsRouter.post('/:id/decision/', requireRole('business_owner', 'staff'), ah
 
 /** Guest records a transfer to the host (≥30% first, then any remaining balance). */
 bookingsRouter.post('/:id/pay/', persistImages, ah(async (req, res) => {
-  if (isHostRole(req.user!.role)) throw forbidden('Only the guest can pay for a booking.');
+  const doc = await Booking.findById(req.params.id).lean<any>();
+  if (doc && doc.userId !== req.user!.id && isHostRole(req.user!.role)) throw forbidden('Only the guest can pay for a booking.');
   res.json(await submitPayment(req.params.id, body(req, paymentInput), req.user!));
 }));
 

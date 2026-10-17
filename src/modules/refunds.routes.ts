@@ -8,7 +8,7 @@ import { newId } from '../utils/ids.js';
 import { toDto } from '../utils/dto.js';
 import { authenticate, requireRole, type AuthUser } from '../middleware/auth.js';
 import { persistImages } from '../middleware/persistImages.js';
-import { body } from '../middleware/validate.js';
+import { body, query } from '../middleware/validate.js';
 import { canSee } from './bookings.service.js';
 import { hostListingIds, hostRecipients } from './hosts.js';
 import { adminIds, notify } from './notifications.service.js';
@@ -57,22 +57,22 @@ refundsRouter.use(authenticate);
 
 refundsRouter.get('/', ah(async (req, res) => {
   const user = req.user!;
+  const q = query(req, z.object({ scope: z.string().optional() }).passthrough());
   let filter: Record<string, unknown> = {};
   if (user.role !== 'admin') {
-    let bookingFilter: Record<string, unknown>;
-    if (user.role === 'tourist') {
-      bookingFilter = { userId: user.id };
-    } else {
-      const ids = await hostListingIds(user);
-      bookingFilter = { $or: [{ businessId: { $in: ids } }, { targetId: { $in: ids } }] };
-    }
+    // `scope=traveller` lets an owner or staff member see the refunds on their own bookings.
+    const asTraveller = user.role === 'tourist' || q.scope === 'traveller';
+    const listingIds = asTraveller ? null : await hostListingIds(user);
+    const bookingFilter: Record<string, unknown> = listingIds === null
+      ? { userId: user.id }
+      : { $or: [{ businessId: { $in: listingIds } }, { targetId: { $in: listingIds } }] };
     const bookingIds = (await Booking.find(bookingFilter, { _id: 1 }).lean<any[]>()).map((b) => b._id);
     filter = { bookingId: { $in: bookingIds } };
   }
   res.json((await Refund.find(filter).sort({ createdAt: -1 }).lean<any[]>()).map((r) => toDto(r)));
 }));
 
-refundsRouter.post('/', requireRole('tourist'), persistImages, ah(async (req, res) => {
+refundsRouter.post('/', requireRole('tourist', 'business_owner', 'staff'), persistImages, ah(async (req, res) => {
   const input = body(req, refundRequestInput);
   const booking = await Booking.findById(input.bookingId).lean<any>();
   if (!booking || booking.userId !== req.user!.id) throw notFound('Booking');
@@ -173,7 +173,7 @@ refundsRouter.post('/:id/complete/', requireRole('business_owner', 'staff'), per
 }));
 
 /** The traveller withdraws a request that is still waiting for admin. */
-refundsRouter.post('/:id/cancel/', requireRole('tourist'), ah(async (req, res) => {
+refundsRouter.post('/:id/cancel/', requireRole('tourist', 'business_owner', 'staff'), ah(async (req, res) => {
   const { refund, booking } = await loadVisible(req.params.id, req.user!);
   if (booking.userId !== req.user!.id) throw forbidden('Only the traveller can cancel this refund.');
   if (refundIsClosed(refund.status) || !refundIsOpenForTraveller(refund.status)) throw conflict('This refund can no longer be canceled.');

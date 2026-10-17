@@ -5,7 +5,7 @@ import { BCRYPT_COST, PASSWORD_MIN_LENGTH } from '../config.js';
 import { Business, User } from '../models/index.js';
 import { ah } from '../utils/async.js';
 import { badRequest, conflict, notFound, unprocessable } from '../utils/errors.js';
-import { newId } from '../utils/ids.js';
+import { newId, randomPassword } from '../utils/ids.js';
 import { authenticate, requireRole, type AuthUser } from '../middleware/auth.js';
 import { body, provided, query } from '../middleware/validate.js';
 import { email, nonEmpty, phone } from './common.js';
@@ -17,7 +17,8 @@ const SHAPE = ['passwordHash', 'passwordResetTokenHash', 'passwordResetExpiresAt
 export const staffInput = z.object({
   name: nonEmpty('Name').min(2, 'Enter the full name.'),
   email,
-  password: z.string().min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters for the password.`).max(200),
+  /** Optional. When the owner does not choose one, we make a random password and email it to them. */
+  password: z.string().min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters for the password.`).max(200).optional(),
   phone: phone.optional(),
   /** Only "Manager" exists today; kept for forward compatibility. */
   title: z.string().trim().max(60).optional(),
@@ -75,11 +76,13 @@ staffRouter.post('/', ah(async (req, res) => {
   await assertEmailFree(input.email);
   await assertOwnListings(ownerId, input.assignedListingIds);
   if (await managerClash(ownerId, input.assignedListingIds)) throw conflict('That branch already has a manager.');
+  const generated = !input.password;
+  const password = input.password ?? randomPassword();
   const doc = await User.create({
     _id: newId('staff'),
     name: input.name,
     email: input.email,
-    passwordHash: await bcrypt.hash(input.password, BCRYPT_COST),
+    passwordHash: await bcrypt.hash(password, BCRYPT_COST),
     role: 'staff',
     phone: input.phone,
     title: 'Manager',
@@ -91,7 +94,7 @@ staffRouter.post('/', ah(async (req, res) => {
   await notify([doc._id], { kind: 'staff', title: 'You were added as a manager', body: `You can now manage ${doc.assignedListingIds.length} branch${doc.assignedListingIds.length === 1 ? '' : 'es'}.`, path: '/business' });
   const owner = await User.findById(ownerId, { name: 1, businessName: 1 }).lean<any>();
   const branches = (await Business.find({ _id: { $in: doc.assignedListingIds } }, { name: 1 }).lean<any[]>()).map((b) => b.name as string);
-  await emailStaffAdded({ name: doc.name, email: doc.email }, owner?.businessName || owner?.name || 'The owner', branches);
+  await emailStaffAdded({ name: doc.name, email: doc.email }, owner?.businessName || owner?.name || 'The owner', branches, generated ? password : undefined);
   res.status(201).json(dto(doc.toObject()));
 }));
 

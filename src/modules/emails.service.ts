@@ -441,23 +441,27 @@ export const emailPasswordChanged = (user: { name: string; email: string }) => s
   }, 'account.password-changed');
 });
 
-export const emailAccountInvite = (user: { name: string; email: string; role: string }) => safely('account.invite', async () => {
+export const emailAccountInvite = (user: { name: string; email: string; role: string }, password?: string) => safely('account.invite', async () => {
   send(user.email, {
     subject: 'Your Tourista Rwanda account is ready',
     heading: `Welcome, ${user.name}`,
-    paragraphs: ['An administrator created an account for you. Choose your own password to get started.'],
-    cta: { label: 'Choose a password', url: link('/forgot-password') },
+    paragraphs: [
+      'An administrator created an account for you.',
+      ...(password ? [`Sign in with this temporary password: ${password}`, 'Change it right away from your profile once you are in.'] : ['Choose your own password to get started.']),
+    ],
+    cta: password ? { label: 'Sign in', url: link('/login') } : { label: 'Choose a password', url: link('/forgot-password') },
   }, 'account.invite');
 });
 
-export const emailStaffAdded = (staff: { name: string; email: string }, ownerName: string, branches: string[]) => safely('staff.added', async () => {
+export const emailStaffAdded = (staff: { name: string; email: string }, ownerName: string, branches: string[], password?: string) => safely('staff.added', async () => {
   send(staff.email, {
     subject: `${ownerName} added you to their team on Tourista Rwanda`,
     heading: 'You were added as a manager',
     paragraphs: [
       `Hello ${staff.name}, ${ownerName} made you a manager on Tourista Rwanda.`,
       branches.length ? `Branches you manage: ${branches.join(', ')}.` : 'They have not assigned a branch yet.',
-      'Sign in with your email and the password the owner gave you. You can approve bookings, confirm payments and keep offerings up to date.',
+      password ? `Sign in with this temporary password: ${password}` : 'Sign in with your email and the password the owner gave you.',
+      'You can approve bookings, confirm payments and keep offerings up to date.',
     ],
     cta: { label: 'Sign in', url: link('/login') },
   }, 'staff.added');
@@ -470,6 +474,19 @@ export const emailStaffStatus = (staff: { name: string; email: string }, active:
     paragraphs: [active ? `Hello ${staff.name}, you can sign in and manage your branches again.` : `Hello ${staff.name}, the owner deactivated your staff account, so you can no longer sign in. Ask them if you think this is a mistake.`],
     ...(active ? { cta: { label: 'Sign in', url: link('/login') } } : {}),
   }, 'staff.status');
+});
+
+/** An admin deactivated an account, so the person can no longer sign in. */
+export const emailAccountDeactivated = (user: { name: string; email: string }, reason?: string) => safely('account.deactivated', async () => {
+  send(user.email, {
+    subject: 'Your Tourista Rwanda account was deactivated',
+    heading: 'Your account was deactivated',
+    paragraphs: [
+      `Hello ${user.name}, an administrator deactivated your account, so you can no longer sign in.`,
+      ...(reason ? [`Reason from admin: ${reason}`] : []),
+      'If you think this is a mistake, reply to this email and we will take another look.',
+    ],
+  }, 'account.deactivated');
 });
 
 // ============================================================= reviews ====
@@ -515,6 +532,31 @@ export const emailListingDecision = (business: any, approved: boolean, reason?: 
     paragraphs: [`Hello ${owner.name}, ${business.name} was not approved yet.`, ...(reason ? [`Reason from admin: ${reason}`] : []), 'Update the listing and save it: it is sent back for review automatically.'],
     cta: { label: 'Edit your listing', url: link('/business-dashboard/business') },
   }, approved ? 'listing.approved' : 'listing.rejected');
+});
+
+/** A "your listing is hidden" notice. One email per owner, covering every branch that changed. */
+export const emailListingsHidden = (businesses: any[], reason?: string) => safely('listing.hidden', async () => {
+  const byOwner = new Map<string, any[]>();
+  for (const business of businesses) {
+    if (!business.ownerId) continue;
+    byOwner.set(business.ownerId, [...(byOwner.get(business.ownerId) ?? []), business]);
+  }
+  for (const [ownerId, list] of byOwner) {
+    const [owner] = await contacts([ownerId]);
+    if (!owner) continue;
+    const names = list.map((b) => b.name);
+    const many = names.length > 1;
+    send(owner.email, {
+      subject: many ? `${names.length} of your listings were hidden` : `${names[0]} was hidden from travellers`,
+      heading: 'A listing was hidden by an administrator',
+      paragraphs: [
+        `Hello ${owner.name}, ${many ? 'these listings were' : `${names[0]} was`} hidden from travellers: ${names.join(', ')}.`,
+        ...(reason ? [`Reason from admin: ${reason}`] : []),
+        'Existing bookings are not affected. Contact us if you think this is a mistake.',
+      ],
+      cta: { label: 'Open your dashboard', url: link('/business-dashboard') },
+    }, 'listing.hidden');
+  }
 });
 
 /** Re-sends the current invoice to the guest's address (the "email me my invoice again" button). */

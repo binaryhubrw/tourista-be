@@ -1,18 +1,17 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import crypto from 'node:crypto';
 import { z } from 'zod';
-import { BCRYPT_COST, PASSWORD_MIN_LENGTH, config } from '../config.js';
+import { BCRYPT_COST, PASSWORD_MIN_LENGTH } from '../config.js';
 import { Business, User } from '../models/index.js';
 import { ah } from '../utils/async.js';
 import { conflict, forbidden, notFound } from '../utils/errors.js';
-import { newId } from '../utils/ids.js';
+import { newId, randomPassword } from '../utils/ids.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
-import { body } from '../middleware/validate.js';
+import { body, provided } from '../middleware/validate.js';
 import { persistImages } from '../middleware/persistImages.js';
 import { bulk, email, nonEmpty, phone, trimmed } from './common.js';
 import { publicOwnerProfile, serializeUser } from './users.service.js';
-import { emailAccountInvite } from './emails.service.js';
+import { emailAccountDeactivated, emailAccountInvite } from './emails.service.js';
 
 export const userInput = z.object({
   name: nonEmpty('Name').min(2, 'Enter the full name.'),
@@ -31,18 +30,19 @@ type UserInput = z.infer<typeof userInput>;
 
 async function toDoc(input: UserInput) {
   const { password, ...rest } = input;
-  const plain = password ?? config.DEFAULT_USER_PASSWORD;
-  // Without a default, generate a random password and email a reset link instead.
-  const effective = plain ?? crypto.randomBytes(18).toString('base64url');
+  // Never give two accounts the same shared password. When the caller does not choose one, make a
+  // fresh random password and email it to the person so they can sign in straight away.
+  const generated = !password;
+  const plain = password ?? randomPassword();
   return {
-    doc: { _id: newId('user'), ...rest, passwordHash: await bcrypt.hash(effective, BCRYPT_COST), joinedAt: new Date().toISOString() },
-    needsReset: !plain,
+    doc: { _id: newId('user'), ...rest, passwordHash: await bcrypt.hash(plain, BCRYPT_COST), joinedAt: new Date().toISOString() },
+    password: generated ? plain : undefined,
   };
 }
 
-/** Everyone an admin creates gets an email; those without a password are sent to choose one. */
-async function inviteIfNeeded(doc: { email: string; name: string; role?: string }, _needsReset: boolean) {
-  await emailAccountInvite({ name: doc.name, email: doc.email, role: doc.role ?? 'tourist' });
+/** Everyone an admin creates gets an email; those without a chosen password are sent a temporary one. */
+async function inviteIfNeeded(doc: { email: string; name: string; role?: string }, password?: string) {
+  await emailAccountInvite({ name: doc.name, email: doc.email, role: doc.role ?? 'tourist' }, password);
 }
 
 export const usersRouter = Router();
@@ -64,16 +64,16 @@ usersRouter.post('/bulk/', requireRole('admin'), persistImages, ah(async (req, r
   if (existing) throw conflict(`An account with ${existing.email} already exists.`);
   const built = await Promise.all(rows.map(toDoc));
   const created = await User.insertMany(built.map((b) => b.doc));
-  for (const b of built) await inviteIfNeeded(b.doc, b.needsReset);
+  for (const b of built) await inviteIfNeeded(b.doc, b.password);
   res.status(201).json(created.map((d: any) => serializeUser(d.toObject(), req.user)));
 }));
 
 usersRouter.post('/', requireRole('admin'), persistImages, ah(async (req, res) => {
   const input = body(req, userInput);
   if (await User.exists({ email: input.email })) throw conflict(`An account with ${input.email} already exists.`);
-  const { doc, needsReset } = await toDoc(input);
+  const { doc, password } = await toDoc(input);
   const created = await User.create(doc);
-  await inviteIfNeeded(doc, needsReset);
+  await inviteIfNeeded(doc, password);
   res.status(201).json(serializeUser(created.toObject(), req.user));
 }));
 
@@ -84,12 +84,27 @@ usersRouter.get('/admins/', ah(async (_req, res) => {
   res.json(docs.map((d) => ({ name: d.name, phone: (d.phone ?? '').trim(), email: d.email })));
 }));
 
-/** Admin activates or deactivates an account. A deactivated account cannot log in again. */
+/** Admin edits a profile (name, email, role, phone, country) and activates or deactivates an account. */
 usersRouter.patch('/:id/', requireRole('admin'), ah(async (req, res) => {
-  const { active } = body(req, z.object({ active: z.boolean() }));
-  if (req.params.id === req.user!.id && !active) throw conflict('You cannot deactivate your own account.');
-  const doc = await User.findByIdAndUpdate(req.params.id, { $set: { active } }, { new: true }).lean<any>();
-  if (!doc) throw notFound('User');
+  const patch = provided(body(req, z.object({
+    name: nonEmpty('Name').min(2, 'Enter the full name.').optional(),
+    email: email.optional(),
+    role: z.enum(['tourist', 'business_owner', 'admin']).optional(),
+    phone: phone.optional(),
+    country: trimmed(80).optional(),
+    active: z.boolean().optional(),
+    reason: trimmed(500).optional(),
+  })), req.body);
+  const deactivating = patch.active === false;
+  if (req.params.id === req.user!.id && deactivating) throw conflict('You cannot deactivate your own account.');
+  const existing = await User.findById(req.params.id, { email: 1 }).lean<any>();
+  if (!existing) throw notFound('User');
+  if (patch.email && patch.email !== existing.email && (await User.exists({ email: patch.email, _id: { $ne: req.params.id } }))) {
+    throw conflict(`An account with ${patch.email} already exists.`);
+  }
+  const { reason, ...fields } = patch;
+  const doc = await User.findByIdAndUpdate(req.params.id, { $set: fields }, { new: true }).lean<any>();
+  if (deactivating) await emailAccountDeactivated({ name: doc.name, email: doc.email }, reason);
   res.json(serializeUser(doc, req.user));
 }));
 

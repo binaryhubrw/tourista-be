@@ -155,17 +155,18 @@ describe('listing approval', () => {
     expect((await http.get('/search/?q=needs%20work%20inn')).body.some((r: any) => r.id === rid)).toBe(false);
   });
 
-  it('keeps editing an approved listing live, and publishes admin-created listings at once', async () => {
+  it('keeps editing an approved listing live, and sends admin-created listings to review', async () => {
     const edited = await http.patch(`/businesses/${id}/`, { description: 'Updated description.' }, 'owner');
     expect(edited.body.approvalStatus).toBe('approved');
     expect((await http.get(`/businesses/${id}/`)).status).toBe(200);
 
     const byAdmin = await http.post('/businesses/', listing('Admin Made Lodge', { ownerId: 'user-business-1' }), 'admin');
-    expect(byAdmin.body.approvalStatus).toBe('approved');
-    expect((await http.get(`/businesses/${byAdmin.body.id}/`)).status).toBe(200);
+    expect(byAdmin.body.approvalStatus).toBe('pending');
+    expect((await http.get(`/businesses/${byAdmin.body.id}/`)).status).toBe(404);
+    expect((await http.get('/businesses/?approvalStatus=pending', 'admin')).body.some((b: any) => b.id === byAdmin.body.id)).toBe(true);
 
     const bulk = await http.post('/businesses/bulk/', [listing('Bulk One'), listing('Bulk Two')], 'admin');
-    expect(bulk.body.every((b: any) => b.approvalStatus === 'approved')).toBe(true);
+    expect(bulk.body.every((b: any) => b.approvalStatus === 'pending')).toBe(true);
   });
 
   it('leaves the seeded catalogue public and reports pending approvals to admins', async () => {

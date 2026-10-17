@@ -310,7 +310,23 @@ describe('staff', () => {
     expect((await http.patch(`/businesses/${branchB}/`, { services: [] }, 'staff')).status).toBe(403);
     expect((await http.post('/businesses/', { name: 'No', category: 'Restaurants', locationId: 'kigali', image: 'x', coordinates: { lat: -1.9, lng: 30 } }, 'staff')).status).toBe(403);
     expect((await http.get('/staff/', 'staff')).status).toBe(403);
-    expect((await http.post('/bookings/', { ...guest }, 'staff')).status).toBe(403);
+
+    // Staff may book as a traveller — but not on a branch they are assigned to.
+    const travel = await http.post('/bookings/', {
+      ...guest, targetId: 'virunga-hillside-ecolodge', targetType: 'business', businessId: 'virunga-hillside-ecolodge',
+      serviceId: (await http.get('/businesses/virunga-hillside-ecolodge/')).body.services.find((s: any) => s.unit === 'per night').id,
+      units: 1, ...range(1), people: 1,
+    }, 'staff');
+    expect(travel.status).toBe(201);
+    expect(travel.body.userId).toBe(staffId);
+    expect((await http.get('/bookings/?scope=traveller', 'staff')).body.some((b: any) => b.id === travel.body.id)).toBe(true);
+    expect((await http.get('/bookings/', 'staff')).body.some((b: any) => b.id === travel.body.id)).toBe(false);
+
+    const own = await http.post('/bookings/', {
+      ...guest, targetId: hotelId, targetType: 'business', businessId: hotelId, serviceId: roomId,
+      units: 1, ...range(1), people: 1,
+    }, 'staff');
+    expect(own.status).toBe(403);
   });
 
   it('deactivation blocks login and kills existing sessions at once', async () => {

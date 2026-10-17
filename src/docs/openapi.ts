@@ -23,6 +23,7 @@ const ref = (name: string) => ({ $ref: `#/components/schemas/${name}` });
 const arr = (items: Json) => ({ type: 'array', items });
 const str = (extra: Json = {}) => ({ type: 'string', ...extra });
 const num = (extra: Json = {}) => ({ type: 'number', ...extra });
+const bool = (extra: Json = {}) => ({ type: 'boolean', ...extra });
 const obj = (properties: Json, required: string[] = []) => ({ type: 'object', properties, ...(required.length ? { required } : {}) });
 const isoDate = str({ pattern: '^\\d{4}-\\d{2}-\\d{2}$', example: '2026-11-12' });
 const instant = str({ format: 'date-time' });
@@ -247,7 +248,7 @@ const paths: Json = {
 
   '/users/': {
     get: op({ tag: 'Users', summary: 'List users', auth: true, roles: 'admin', ok: [200, list('User')], errs: [401, 403] }),
-    post: op({ tag: 'Users', summary: 'Create a user', description: 'Without `password` the `DEFAULT_USER_PASSWORD` is used (dev) or a reset email is sent.',
+    post: op({ tag: 'Users', summary: 'Create a user', description: 'Without `password` a unique random password is generated and emailed to the person so they can sign in.',
       auth: true, roles: 'admin', body: ref('UserInput'), ok: [201, ref('User')], errs: [400, 401, 403, 409] }),
   },
   '/users/bulk/': { post: op({ tag: 'Users', summary: 'Create many users (all-or-nothing)', description: 'Up to 1000 rows. Any duplicate email rejects the whole request.',
@@ -255,6 +256,8 @@ const paths: Json = {
   '/users/{id}/': {
     get: op({ tag: 'Users', summary: 'Get a user', description: 'Any logged-in user may read a **business owner** as a limited public profile (name, business name, masked bank account, mobile-money numbers) so guests can see where a payment goes. Other users are visible only to themselves and admins.',
       auth: true, roles: 'the user themself or admin (full); any logged-in user (business owners, limited)', params: [idParam()], ok: [200, ref('User')], errs: [401, 403, 404] }),
+    patch: op({ tag: 'Users', summary: 'Edit a user', description: 'Update profile fields (name, email, role, phone, country) or activate/deactivate an account. A deactivated account cannot log in again. When deactivating, email the person the reason if provided. You cannot deactivate yourself.',
+      auth: true, roles: 'admin', params: [idParam()], body: obj({ name: str({ minLength: 2 }), email: str(), role: str({ enum: ['tourist', 'business_owner', 'admin'] }), phone: str(), country: str({ maxLength: 80 }), active: bool(), reason: str({ maxLength: 500 }) }), ok: [200, ref('User')], errs: [400, 401, 403, 404, 409] }),
     delete: op({ tag: 'Users', summary: 'Delete a user', description: 'Their listings stay but lose `ownerId`. You cannot delete yourself.',
       auth: true, roles: 'admin', params: [idParam()], ok: [204, null], errs: [401, 403, 404, 409] }),
   },
@@ -307,6 +310,12 @@ const paths: Json = {
   '/businesses/{id}/payout/': { get: op({ tag: 'Businesses', summary: 'Where a guest’s payment goes',
     description: 'Bank accounts are masked; mobile-money numbers are shown in full so guests can see the merchant.',
     auth: true, params: [idParam()], ok: [200, ref('Payout')], errs: [401, 404] }) },
+  '/businesses/{id}/active/': { patch: op({ tag: 'Businesses', summary: 'Hide or restore a listing',
+    description: 'A hidden listing (`active: false`) stays off travellers’ searches and cannot be booked, but the owner and admins still see it. Hiding emails the owner the reason, when one is given.',
+    auth: true, roles: 'admin', params: [idParam()], body: obj({ active: bool(), reason: str({ maxLength: 500 }) }, ['active']), ok: [200, ref('Business')], errs: [400, 401, 403, 404] }) },
+  '/businesses/active/': { patch: op({ tag: 'Businesses', summary: 'Hide or restore several listings',
+    description: 'Updates many branches at once (for example one company across its branches) and emails each owner once.',
+    auth: true, roles: 'admin', body: obj({ ids: arr(str()), active: bool(), reason: str({ maxLength: 500 }) }, ['ids', 'active']), ok: [200, list('Business')], errs: [400, 401, 403, 404] }) },
 
   '/reviews/': {
     get: op({ tag: 'Reviews', summary: 'List reviews, newest first', params: [qParam('targetId', 'Review target id'), qParam('userId', 'Author id')], ok: [200, list('Review')] }),
@@ -328,12 +337,12 @@ const paths: Json = {
 
   '/bookings/': {
     get: op({ tag: 'Bookings', summary: 'List bookings (scoped by role)',
-      description: 'Tourists see their own; business owners see bookings for their listings; admins see all. **Anonymous callers, and tourists passing `scope=business`, receive the public availability list** (confirmed bookings without personal data) — this is what the frontend’s public pages request.',
-      params: [qParam('userId', 'Filter by customer (admin, business owner)'), qParam('businessIds', 'Comma-separated business ids'), qParam('scope', 'Pass `business` to get the public availability list (tourists)')],
+      description: 'Tourists see their own; business owners see bookings for their listings; admins see all. **Anonymous callers, and tourists passing `scope=business`, receive the public availability list** (confirmed bookings without personal data) — this is what the frontend’s public pages request. Owners and staff may pass `scope=traveller` to see the bookings they made themselves as travellers.',
+      params: [qParam('userId', 'Filter by customer (admin, business owner)'), qParam('businessIds', 'Comma-separated business ids'), qParam('scope', 'Pass `business` for the public availability list (tourists), or `traveller` for your own bookings (owners and staff)')],
       ok: [200, { oneOf: [list('Booking'), list('AvailabilityEntry')] }], errs: [] }),
     post: op({ tag: 'Bookings', summary: 'Create a booking',
-      description: 'Starts a request: the booking is `Pending` until the host approves it, and already holds stock (checked inside a transaction). Prices and totals are recomputed on the server (a stale `totalRwf` returns 409). Vehicle hires get registration plates assigned (`lines[].plateNumbers`). Admins may attach a `payment` for desk payments, which confirms the booking immediately; tourists pay after approval via `/pay/`.',
-      auth: true, roles: 'tourist (own), admin (any customer)', body: ref('BookingInput'), ok: [201, ref('Booking')], errs: [400, 401, 403, 404, 409, 422] }),
+      description: 'Starts a request: the booking is `Pending` until the host approves it, and already holds stock (checked inside a transaction). Prices and totals are recomputed on the server (a stale `totalRwf` returns 409). Vehicle hires get registration plates assigned (`lines[].plateNumbers`). Admins may attach a `payment` for desk payments, which confirms the booking immediately; everyone else pays after approval via `/pay/`. Owners and staff may book any listing except their own business (owner) or one they are assigned to (staff), which returns 403.',
+      auth: true, roles: 'tourist (own), business owner or staff (as a traveller), admin (any customer)', body: ref('BookingInput'), ok: [201, ref('Booking')], errs: [400, 401, 403, 404, 409, 422] }),
   },
   '/bookings/availability/': { get: op({ tag: 'Bookings', summary: 'Confirmed bookings for availability calendars',
     description: 'Public and free of personal data (no names, contacts, payments or notes).',
@@ -348,7 +357,7 @@ const paths: Json = {
   },
   '/bookings/{id}/pay/': { post: op({ tag: 'Bookings', summary: 'Record a transfer to the host',
     description: 'Used after the host approves (`AwaitingPayment`) and for any later balance. The first transfer must be at least 30% of the total and arrive inside the two-hour window; omit `amountRwf` to pay everything that is left. The recipient account is always taken from the host’s profile, and a screenshot (https URL or base64 image) can be attached. The booking moves to `PaymentReview` until the host confirms.',
-    auth: true, roles: 'the guest, or admin', params: [idParam()], body: ref('PaymentInput'), ok: [200, ref('Booking')], errs: [400, 401, 403, 404, 409, 422] }) },
+    auth: true, roles: 'the guest (including an owner or staff member acting as a traveller on their own booking), or admin', params: [idParam()], body: ref('PaymentInput'), ok: [200, ref('Booking')], errs: [400, 401, 403, 404, 409, 422] }) },
   '/bookings/{id}/invoice/': { get: op({ tag: 'Bookings', summary: 'Download the invoice (PDF)',
     description: 'Available once the booking has a payment. The status line reads PAID, PARTIALLY PAID, PAYMENT PENDING CONFIRMATION or REFUNDED. The same PDF is attached to payment emails. Fetch it with the Authorization header and open the blob.',
     auth: true, roles: 'the guest, the listing owner or assigned staff, admin', params: [idParam()],
@@ -376,10 +385,11 @@ const paths: Json = {
     ok: [200, list('SearchResult')] }) },
 
   '/refunds/': {
-    get: op({ tag: 'Refunds', summary: 'List refunds (scoped by role)', description: 'Travellers see their own, hosts see refunds on their listings (staff: assigned branches), admins see all.',
+    get: op({ tag: 'Refunds', summary: 'List refunds (scoped by role)', description: 'Travellers see their own, hosts see refunds on their listings (staff: assigned branches), admins see all. Owners and staff may pass `scope=traveller` to see refunds on bookings they made themselves as travellers.',
+      params: [qParam('scope', 'Pass `traveller` to see your own refunds (owners and staff)')],
       auth: true, ok: [200, list('Refund')], errs: [401] }),
-    post: op({ tag: 'Refunds', summary: 'Ask for a refund', description: 'Only for a booking whose payment is `Paid`, and only one open request per booking. The booking moves to `RefundPending` and admins are notified.',
-      auth: true, roles: 'tourist (own booking)', body: ref('RefundRequestInput'), ok: [201, ref('Refund')], errs: [400, 401, 403, 404, 409, 422] }),
+    post: op({ tag: 'Refunds', summary: 'Ask for a refund', description: 'Only for a booking whose payment is `Paid`, and only one open request per booking. The booking moves to `RefundPending` and admins are notified. The caller must be the guest on the booking.',
+      auth: true, roles: 'the guest (tourist, or an owner or staff member acting as a traveller on their own booking)', body: ref('RefundRequestInput'), ok: [201, ref('Refund')], errs: [400, 401, 403, 404, 409, 422] }),
   },
   '/refunds/{id}/': { get: op({ tag: 'Refunds', summary: 'Get a refund', description: 'Returns 404 when the caller may not see it.',
     auth: true, params: [idParam()], ok: [200, ref('Refund')], errs: [401, 404] }) },
@@ -389,8 +399,8 @@ const paths: Json = {
     auth: true, roles: 'admin', params: [idParam()], body: obj({ note: str() }), ok: [200, ref('Refund')], errs: [401, 403, 404, 409] }) },
   '/refunds/{id}/complete/': { post: op({ tag: 'Refunds', summary: 'Host records the refund transfer', description: 'Only after admin approval. The booking becomes `Refunded` and the payment `Refunded`.',
     auth: true, roles: 'the listing owner, or assigned staff', params: [idParam()], body: ref('RefundCompleteInput'), ok: [200, ref('Refund')], errs: [400, 401, 403, 404, 409, 422] }) },
-  '/refunds/{id}/cancel/': { post: op({ tag: 'Refunds', summary: 'Traveller withdraws a refund request', description: 'Only while it is still waiting for admin. The booking returns to `Confirmed`.',
-    auth: true, roles: 'tourist (own)', params: [idParam()], ok: [200, ref('Refund')], errs: [401, 403, 404, 409] }) },
+  '/refunds/{id}/cancel/': { post: op({ tag: 'Refunds', summary: 'Traveller withdraws a refund request', description: 'Only while it is still waiting for admin. The booking returns to `Confirmed`. The caller must be the guest on the booking.',
+    auth: true, roles: 'the guest (tourist, or an owner or staff member acting as a traveller on their own booking)', params: [idParam()], ok: [200, ref('Refund')], errs: [401, 403, 404, 409] }) },
 
   '/staff/': {
     get: op({ tag: 'Staff', summary: 'List my team', description: 'Admins may pass `ownerId`.', auth: true, roles: 'business_owner, admin',
